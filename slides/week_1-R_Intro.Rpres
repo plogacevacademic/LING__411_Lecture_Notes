@@ -1,0 +1,383 @@
+Introduction to R
+========================================================
+author: Pavel Logacev
+date: 
+autosize: true
+
+Introduction to R
+========================================================
+
+- R is a open-source, freely available _statistical programming language_.
+- *R Studio* is the most commonly used interface to R.
+- Originally developed at Bell Labs in the 1980s as the _S programming language_.
+- Modular: Most of the functionality is in code libraries called _packages_. 
+- "Literate programming": knitr, etc.
+
+The Basics 
+========================================================
+R is essentially a _really_ fancy calulator.
+
+Addition
+```{r, prompt=TRUE}
+2+1
+```
+Subtraction
+```{r, prompt=TRUE}
+2-1
+```
+
+
+
+The Basics 
+========================================================
+R is essentially a _really_ fancy calulator.
+
+Multiplication
+```{r, prompt=TRUE}
+2*3
+```
+
+Division
+```{r, prompt=TRUE}
+2/3
+```
+
+
+The Basics 
+========================================================
+R is essentially a _really_ fancy calulator.
+
+Exponentiation
+```{r, prompt=TRUE}
+2^3
+```
+
+
+
+The Basics 
+========================================================
+Values can be stored in **variables** using the **assignment operator**: Let's save the _result_ of a complex expression
+
+```{r, prompt=TRUE}
+my_variable <- (10 - 2)/3^4
+my_other_variable <- 10^2
+```
+
+...  to retrieve it later.
+```{r, prompt=TRUE}
+my_variable
+```
+
+... or to combine with other variables
+```{r, prompt=TRUE}
+my_variable + my_other_variable
+```
+
+The Basics 
+========================================================
+
+...  or to compare with other variables
+- '==' tests for equality and '!=' tests for inequality
+- What do you think '<', '>', '<=', and '=>' test for?
+
+```{r, prompt=TRUE}
+my_variable == my_other_variable
+```
+
+```{r, prompt=TRUE}
+my_other_variable == 100
+```
+
+```{r, prompt=TRUE}
+my_other_variable < 100
+```
+
+
+Using R Help 
+========================================================
+- Let's say you forgot the difference between '=', '==', and '<-'.
+
+```{r, prompt=TRUE, eval=FALSE}
+help("<-")
+```
+
+```{r, prompt=TRUE, eval=F}
+help("=")
+```
+
+```{r, prompt=TRUE, eval=FALSE}
+help("==")
+```
+
+```{r, prompt=TRUE, eval=FALSE}
+help("glm")
+```
+
+
+Data Types
+========================================================
+Variables have data types: 
+  - **integers:*  ..., -3, -2, -1, 0, +1, +2, +3, ...
+  - **doubles:** real numbers, i.e. (almost) all the numbers you know
+  - **characters:** `"a"`, `"b"`, `"word"`, `"hello dear friend, ..."`
+  - **logical:** `TRUE / FALSE`
+  - **factors:** (a pre-defined set of strings)
+
+```{r, prompt=TRUE}
+my_apples <- 1
+my_oranges <- "one"
+```
+```{r, prompt=TRUE, error=T}
+my_apples == my_oranges
+```
+
+
+Data Types
+========================================================
+Sometimes we can convert between data types:
+
+```{r, prompt=TRUE}
+my_apples <- 1
+my_oranges <- "1.1"
+```
+```{r, prompt=TRUE, error=T}
+my_apples + my_oranges
+```
+
+```{r, prompt=TRUE, error=T}
+my_apples + as.integer(my_oranges)
+```
+
+```{r, prompt=TRUE, error=T}
+my_apples + as.double(my_oranges)
+```
+
+
+Data Types
+========================================================
+Sometimes we can convert between data types:
+
+```{r, prompt=TRUE}
+my_apples <- 1
+my_oranges <- "1.1"
+```
+```{r, prompt=TRUE, error=T}
+typeof(my_apples)
+```
+
+```{r, prompt=TRUE, error=T}
+typeof(my_oranges)
+```
+
+```{r, prompt=TRUE, error=T}
+typeof(as.double(my_oranges))
+```
+
+
+
+Data Structures: Vectors I
+========================================================
+R has four main data structures:
+- Vectors (one data type)
+- Matrices (one data type)
+- Data frames (several data types)
+- Lists (several data types)
+
+
+
+Data Structures: Vectors I
+========================================================
+Here are two vectors representing the winnings from my recent gambling:
+```{r, prompt=TRUE}
+horse_bets_payout_tl <- c(10, -50, 1, 100, -10, -20, 150, -40, -30, 23, -23, 10, 14, 8, 24, -3)
+poker_payout_tl <- c(24, 5, -38.1, 12, 103, 15, 5, 187, 13, -23, -45, 36)
+```
+
+Let's find out which game is more profitable ...
+```{r, prompt=TRUE, error=T}
+sum(horse_bets_payout_tl)
+```
+
+Data Structures: Vectors II
+========================================================
+... we may also need these functions:
+```{r, prompt=TRUE, error=T}
+length(horse_bets_payout_tl)
+mean(horse_bets_payout_tl)
+sum(horse_bets_payout_tl)/length(horse_bets_payout_tl)
+```
+
+... so which game is more profitable?
+
+
+Data Structures: Vectors III
+========================================================
+Oh, sorry! I forgot to mention that my bookie charges me 1.5 TL per bet on a horse, on average. The poker payouts correspond to the profits, though.
+
+- Luckily, we can just add numbers and vectors. 
+
+```{r, prompt=TRUE, error=T}
+horse_bets_profits_tl <- horse_bets_payout_tl - 1.5
+```
+
+... which game is more profitable now?
+ 
+
+Data Structures: Vectors IV
+========================================================
+Oh, sorry again! I remembered now my bookie actually charges me 1 TL if I have lost the *previous* bet, and 2 TL otherwise.
+
+- Luckily, we can just add vectors and vectors (sometimes).
+
+```{r, prompt=TRUE, error=T, eval=F}
+# determine bookmaker fees
+horse_bets_bookmaker_fee_tl <- ...
+```
+```{r, prompt=TRUE, error=T, eval=F}
+# correct the fees
+horse_bets_profits_tl <- horse_bets_payout_tl - horse_bets_bookmaker_fee_tl
+```
+
+
+Data Structures: Vectors V
+========================================================
+
+```{r, prompt=TRUE, error=T}
+# determine which payouts we need
+required_bet_indices <- 1:(length(horse_bets_payout_tl)-1)
+```
+```{r, prompt=TRUE, error=T}
+# extract the payouts we need (the last bet's payout doesn't matter)
+horse_bets_payout_tl_nonlast <- horse_bets_payout_tl[required_bet_indices]
+```
+```{r, prompt=TRUE, error=T}
+# determine bookmaker fees
+horse_bets_bookmaker_fee_tl_nonfirst <- ifelse(horse_bets_payout_tl_nonlast > 0, 2, 1)
+```
+
+Data Structures: Vectors V
+========================================================
+
+```{r, prompt=TRUE, error=T}
+# set the first bet's fee to 2 TL
+horse_bets_bookmaker_fee_tl <- c(2, horse_bets_bookmaker_fee_tl_nonfirst)
+```
+```{r, prompt=TRUE, error=T}
+# determine profits
+horse_bets_profits_tl <- horse_bets_payout_tl - horse_bets_bookmaker_fee_tl
+```
+
+
+
+Data Structures: Data Frames I
+========================================================
+- What I forgot to mention is that I generally gamble on Wednesdays and Friday. 
+- How do we represent this?
+
+```{r, prompt=TRUE, error=T, eval=T}
+length(horse_bets_profits_tl)
+length(poker_payout_tl)
+```
+```{r, prompt=TRUE, error=T}
+# create vectors with week days
+horse_bets_week_days <- rep(c("Wed", "Fr"), 8)
+poker_week_days <- rep(c("Wed", "Fr"), 6)
+```
+
+
+Data Structures: Data Frames I
+========================================================
+
+- So we have two pairs of vectors that are somehow related. Let's bring them together.
+```{r, prompt=TRUE, error=T}
+df_horse_bets <- data.frame(game = "horse_bets", wday = horse_bets_week_days, profit = horse_bets_profits_tl)
+df_poker <- data.frame(game = "poker", wday = poker_week_days, profit = poker_payout_tl)
+```
+
+```{r, prompt=TRUE, error=T, eval=T}
+# let's take a look at what we've created
+head(df_horse_bets, 2)
+```
+```{r, prompt=TRUE, error=T, eval=F}
+# ... this is an alternative way
+View(df_poker)
+```
+
+
+Data Structures: Data Frames II
+========================================================
+- Now, let's bring those data frames together.
+
+```{r, prompt=TRUE, error=T}
+# create a data frame by joining all data
+df_gambling <- rbind(df_horse_bets, df_poker)
+```
+
+- Now, we can do very cool things very easily. But we'll need two packages for that: `dplyr`, and `magrittr`.
+```{r, prompt=TRUE, error=T}
+library(magrittr)
+library(dplyr)
+df_gambling %>% group_by(game) %>% summarize(avg_profit = mean(profit))
+```
+
+
+Data Structures: Working with Data Frames I
+========================================================
+- We can aggregate over several grouping variables.
+```{r, prompt=TRUE, error=T}
+df_gambling %>% group_by(game, wday) %>% summarize(avg_profit = mean(profit))
+```
+
+... in various ways
+```{r, prompt=TRUE, error=T}
+df_gambling %>% group_by(game, wday) %>% summarize(avg_profit = mean(profit>0))
+```
+
+
+Data Structures: Working with Data Frames II
+========================================================
+- We can also plot the results. We'll need yet another packages: `ggplot2`.
+```{r, prompt=TRUE, error=T}
+profits_by_game <- df_gambling %>% group_by(game) %>% summarize(avg_profit = mean(profit))
+profits_by_game_and_wday <- df_gambling %>% group_by(game, wday) %>% summarize(avg_profit = mean(profit))
+```
+
+
+Data Structures: Working with Data Frames II
+========================================================
+```{r, prompt=TRUE, error=T}
+library(ggplot2)
+ggplot(profits_by_game, aes(game, avg_profit)) + geom_point()
+```
+
+
+Data Structures: Working with Data Frames II
+========================================================
+```{r, prompt=TRUE, error=T}
+library(ggplot2)
+ggplot(profits_by_game_and_wday, aes(game, avg_profit, color = wday, group = wday)) + geom_point() + geom_line()
+```
+
+
+Data Structures: Working with Data Frames III
+========================================================
+```{r, prompt=TRUE, error=T}
+library(ggplot2)
+ggplot(profits_by_game, aes(game, avg_profit)) + geom_bar(stat = "identity")
+```
+
+
+Data Structures: Working with Data Frames IV
+========================================================
+```{r, prompt=TRUE, error=T}
+library(ggplot2)
+ggplot(profits_by_game_and_wday, aes(game, avg_profit, fill = wday)) + geom_bar(stat = "identity", position = "dodge")
+```
+
+Further resources
+=======
+- Collection of tutorials on R: https://ademos.people.uic.edu/index.html
+- A free online R introductory course: https://www.datacamp.com/courses/free-introduction-to-r
+- Online R tutorial: http://compcogscisydney.org/psyr/
+- Online book: http://r4ds.had.co.nz/
+
