@@ -1,0 +1,353 @@
+---
+title: "(Generalized) Linear Models as a Descriptive Tool I"
+author: "Pavel Logacev"
+date: "October 8, 2018"
+output: 
+  ioslides_presentation:
+    widescreen: true
+    smaller: true
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Two Types of Research Questions
+Consider the following research questions:
+
+1. Is the new pain medication we developed any good?
+2. Is the buttered toast phenomenon really true?
+3. How does focus influence word order in Turkish?
+4. Do taller people have deeper voices?
+
+How are they different from these questions:
+
+1. Why is the new pain medication we developed so good?
+2. Why do taller people have deeper voices?
+3. Through which mechanisms does focus determine word order in Turkish?
+
+
+## Two Types of Research Questions
+
+The questions below require only **phenomenological models** (models that make no predictions beyond the phenomenon in question).
+
+$\triangleright$ They also have a clear connection to *statistical models* of the data. 
+
+1. Is the new pain medication we developed any good?
+2. Is the buttered toast phenomenon really true?
+3. How does focus influence word order in Turkish?
+4. Do taller people have deeper voices?
+
+<!-- TODO: 
+Consider discussing in this context:
+- Operationalization
+- Internal/External validity
+- Confounds
+The alternative is to discuss them later to not muddy the waters here.
+-->
+
+
+## Two Types of Research Questions
+
+The questions below involve **process models**/**mechanistic models** (models based in broader principles and, hopefully, making predictions beyond the observed phenomenon).
+
+$\triangleright$ The connection to statical models is less straightforward. 
+
+
+$\blacktriangleright$ Most interesting questions in (psycho)linguistics and related areas involve process models/mechanistic models, because otherwise we'd just catalogue phenomena.
+
+1. Why is the new pain medication we developed so good?
+2. Why do taller people have deeper voices?
+3. Through which mechanisms does focus determine word order in Turkish?
+
+
+## Example: PP Attachment | Or why must things be so complicated?
+<!-- TODO: Find a better example which doesn't involve confounds, but literally two theories predicting the same thing for different reasons. But one that is still easy to understand.  -->
+
+- The **tuning hypothesis** claims (among other things) that syntactic structures are used as often as they are heard.
+
+- An actual implemented model of this hypothesis would be some sort of connectionist model.
+
+- Let's say we look at a corpus, and find that in constructions like (1), PP attachment is to $N_1$ in 75% of the cases.
+
+$(1)$ ... the $N_1$ of the $N_2$ $[_{RC}$ who Ved $]$ ...
+
+- We run a questionnaire study; participants indicate where the RC attaches; it's to $N_1$ in 75% of the cases.
+
+$\triangleright$ Hypothesis confirmed? Model confirmed?
+
+
+
+## Example: PP Attachment | Or why must things be so complicated?
+Here is an alternative account: 
+
+$\triangleright$ *All* participants have an *actual* preference of 100%. 
+
+$\triangleright$ But 50% of the participants weren't cooperative, and just ticked random boxes.
+
+$\blacktriangleright$ Two different process models explain the same finding.
+
+
+## Statistical Models
+
+So what are the statistical models of these process models?
+
+**Tuning Hypothesis**: A stipulation about an observed variable
+$P_{N_1} = 0.7$ 
+<!-- the simplest statistical model in the world -->
+
+**Alternative Account**: A relationship between two variables
+  $P_{N_1} =  P_{uncooperative}*0.5 + (1-P_{uncooperative})*1$
+<!-- posits a relationship between two variables -->
+
+$\rightarrow$ They are equivalent for $P_{uncooperative}=0.5$.
+
+$\blacktriangleright$ More generally, statistical models reflect a *distilled* version of a theory that encode how variables should behave with respect to one another.
+
+$\blacktriangleright$ But what if we don't have a theory, such as in the phenomenological research questions above?
+
+<!--
+## Typical Findings
+
+- Most interesting effects studied empirically in (psycho)linguistics are measured as differences.
+- Examples
+  - TODO
+-->
+
+## The Linear Model 
+
+The basic form of a linear model, in a form that works for *idealized* data:
+
+<!-- \underbrace{\hat{y}}_{\text{Predicted value}} = -->
+$$ \color{red}{ \underbrace{y}_{\text{Predicted value}} } =
+            \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_1}_{\text{Coefficient}} * \underbrace{x_1}_{Predictor}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_2}_{\text{Coefficient}} * \underbrace{x_2}_{Predictor}}^{\text{additive term}} +  
+            \ldots$$
+<!--  \overbrace{\ldots}^{\text{more additive terms}} -->
+            
+Two types are usually distinguished: *univariate*, *bivariate*.
+
+Throughout this course, we will make use of the (Generalized) Linear Model as the main statistical model because it is:
+
+- fairly easy to use
+
+- suffficiently versatile for most practical purposes
+
+- well-studied
+
+```{r echo=FALSE, results='hide', message=FALSE}
+library(tidyverse)
+library("scatterplot3d")
+library(magrittr)
+library(languageR)
+labelled_arrow <- function(p, coord_arrow, coord_text, label, color, arrowhead_size = unit(0.2, "cm")) {
+    p + geom_segment(data=NULL, aes(x=coord_arrow[1], y=coord_arrow[2], 
+                                      xend=coord_arrow[3], yend=coord_arrow[4]), 
+                        color = color, arrow = arrow(length = arrowhead_size)) + 
+          geom_text(x = coord_text[1], y = coord_text[2], label = label, color = color)
+}
+    
+```
+
+
+## Univariate Linear Models
+Let's take a look at a **univariate** linear model applied to a dataset containing car speed and stopping distance (all generated data, for now). 
+
+<div class="columns-2">
+- Model: dist $=$ $\alpha$ $+$ $\beta$ $*$ $speed$
+- Coefficients: $\alpha = 10$, $\beta = 5$
+- So what can we learn from this model's intercept and slope?
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+inputPanel(
+  checkboxInput("lineOn", label = "Show Model:", value = FALSE),
+  checkboxInput("coefsOn", label = "Show Coefficients:", value = FALSE)
+)
+```
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+cars_perfect <- data.frame(speed=unique(cars$speed)) %T>% 
+                  {.$weight <- sample(1:5, nrow(.), replace=TRUE)} %T>% 
+                  {.$distx <- 10 + 5*.$speed; .$dist <- 10 + 5*.$speed + 5*.$weight}
+
+renderPlot({
+  a = 10; b1 = 5;
+  p <- cars_perfect %>% ggplot(aes(speed, distx)) + geom_point()
+  if (as.logical(input$lineOn)) {
+    p <- p + geom_abline(intercept = a, slope = b1, color = "red")
+  }
+  if (!as.logical(input$coefsOn)) {
+  #  p <- p  + scale_x_continuous(limits = c(15, 21)) +
+  #            scale_y_continuous(limits = c(30, 55))
+  } else {
+    p <- p  + scale_x_continuous(limits = c(0, 25)) +
+              scale_y_continuous(limits = c(0, 140))
+    p <- p + geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
+    
+    p <- p %>% labelled_arrow(c(0,0,0,a), c(2, 2), label = "Intercept", color = "blue")
+    
+    p <- (p + geom_segment(data=NULL, aes(x=0, y=a, xend=1, yend=a), color = "green")) %>%
+              labelled_arrow(c(1,a,1,a+b1), c(2.5, 10), label = "Slope", color = "green")
+  }
+  p
+  #p + geom_text()
+})
+```
+</div>
+
+
+## Multivariate Linear Models
+
+Let's add another predictor called 'car weight' (in tons).
+
+<div class="columns-2">
+- Model: dist $=$ $\alpha$ $+$ $\beta_1$ $*$ $speed$ $+ \beta_2 * weight$
+- Coefficients: $\alpha = 10$, $\beta_1 = 5$, $\beta_2 = 5$
+- So what can we learn from this model's intercept and slopes?
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+inputPanel(
+  checkboxInput("modelOn", label = "Show Model:", value = FALSE),
+  checkboxInput("originalModelOn", label = "Show Original Model:", value = FALSE),
+  sliderInput("angle", label = "Plot Angle", min = 0, max = 360, value = 60)
+)
+```
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+
+renderPlot({
+  a = 10; b1 = 5; b2 = 5;
+  cars_perfect2 <- cars_perfect %>% dplyr::select(speed, weight, dist)
+  
+  # full_lm <- lm(cars_perfect$dist ~ cars_perfect$weight + cars_perfect$speed)
+
+  angle <- 60
+  if (!is.null(input)) angle <- input$angle
+  s3d <- scatterplot3d(cars_perfect2, type = "h", color = "blue", angle=angle, pch = 16) # input$value
+  #s3d$plane3d(Intercept = -48, x.coef = 0, y.coef = 5, col = "blue")
+  
+  if (as.logical(input$modelOn)) {
+    s3d$plane3d(Intercept = 10, x.coef = 5, y.coef = 5)
+  }
+  if (as.logical(input$originalModelOn)) {
+    s3d$plane3d(Intercept = 10, x.coef = 5, y.coef = 0, col = "red")
+  }
+  s3d
+})
+```
+</div>
+
+
+
+## Categorical Predictors
+- Predictors on the **nominal** or **ordinal scale** (as opposed to **ratio**, or **interval** scale) are not naturally represented by numbers. For example: Speaker gender, Presence or absence of wh-movement, word order (e.g., SOV, SVO, VSO), size (*long, short*).
+
+
+<div class="columns-2">
+
+- We can represent them numerically, but there are many coding options. We could represent a factor with two levels by 0 and 1, or by -1 and 1, \ldots.
+
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+inputPanel(
+   selectInput("contrastCat1", "Contrast:",
+              c("Treatment Contrast" = "treat",
+                "Sum Contrast" = "sum")),
+  checkboxInput("lineOnCat1", label = "Show Model:", value = FALSE),
+  checkboxInput("coefsOnCat1", label = "Show Coefficients:", value = FALSE)
+)  
+
+```
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+
+renderPlot({
+  dative_agg <- dative %>% group_by(PronomOfTheme) %>% 
+                            dplyr::summarize(prop_NP = mean(RealizationOfRecipient == "NP") )
+  
+  if (exists("input") && input$contrastCat1 == "sum") {
+    dative_agg$cThemePron <- ifelse(dative_agg$PronomOfTheme == "pronominal", 1, -1) 
+  } else {
+    dative_agg$cThemePron <- ifelse(dative_agg$PronomOfTheme == "pronominal", 1, 0) 
+  }
+  
+  coefs <- coef(lm(prop_NP ~ cThemePron, dative_agg))
+  a = coefs[1]; b1 = coefs[2];
+
+  p <- dative_agg %>% ggplot(aes(cThemePron, prop_NP)) + geom_point()
+  if (as.logical(input$lineOnCat1)) {
+    p <- p + geom_abline(intercept = a, slope = b1, color = "red")
+  }
+  if (!as.logical(input$coefsOnCat1)) {
+    #p <- p  + scale_x_continuous(limits = c(15, 21)) +
+    #          scale_y_continuous(limits = c(30, 55))
+  } else {
+    #p <- p  + scale_x_continuous(limits = c(0, 1)) +
+    #          scale_y_continuous(limits = c(0, 1))
+    p <- p + geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
+    
+    p <- p %>% labelled_arrow(c(0,0,0,a), c(.2, +.25), label = "Intercept", color = "blue")
+    
+    p <- (p + geom_segment(data=NULL, aes(x=0, y=a, xend=1, yend=a), color = "green")) %>%
+              labelled_arrow(c(1,a,1,a+b1), c(.25, .5), label = "Slope", color = "green")
+  }
+  p + ggtitle(sprintf("%0.2f + %0.2f*x", a, b1))
+  #p + geom_text()
+})
+```
+</div>
+
+
+
+## Dealing with Non-Ideal Linear Models
+- The models we looked at so far, were on idealized data.
+
+- How do we deal with datasets like this?
+
+<div class="columns-2">
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+inputPanel(
+  sliderInput("intercept", "Intercept", min = -100, max = 100, value = 0),
+  sliderInput("slope", "Slope", min = -50, max = 50, value = 1)
+)
+```
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+cars_perfect3 <- cars[c(27,32,41),]
+renderPlot({
+  #a = -48; b1 = 5;
+  
+  p <- cars %>% ggplot(aes(speed, dist)) + geom_point()
+  p <- p + geom_abline(intercept = input$intercept, slope = input$slope, color = "red")
+
+  p
+})
+```
+</div>
+
+
+## The Real Linear Model 
+
+The basic form of a linear model, in a form that works for **real** data:
+
+$$ \underbrace{\hat{y_i}}_{\text{Predicted value}} =
+            \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_1}_{\text{Coefficient}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_2}_{\text{Coefficient}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
+            \ldots +
+            \underbrace{\epsilon_i}_{Error}$$
+- The error $\epsilon$ is a **normally distributed** **random variable** with mean 0, and some unknown standard deviation $\sigma$. ($\epsilon \sim  N(0,\sigma)$)
+
+- Another way to conceptualize a linear regression model is:
+$$ \underbrace{\hat{\mu_y}}_{\text{Predicted } \mu \text{ at i}} =
+            \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_1}_{\text{Coefficient}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}}  + 
+            \overbrace{\underbrace{\beta_2}_{\text{Coefficient}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
+            \ldots$$
+where $$y \sim N(\mu_y, \sigma)$$
+
+The second conceptualization will be used in McElreath's book.
+
+            
