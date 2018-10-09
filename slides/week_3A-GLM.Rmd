@@ -301,7 +301,7 @@ renderPlot({
 
 
 
-## Dealing with Non-Ideal Linear Models
+## Dealing with Non-Ideal Data
 - The models we looked at so far, were on idealized data.
 
 - How do we deal with datasets like this?
@@ -315,20 +315,81 @@ inputPanel(
 ```
 
 ```{r, fig.height=2, fig.width=2, fig.align='right'}
-cars_perfect3 <- cars[c(27,32,41),]
 renderPlot({
-  #a = -48; b1 = 5;
-  
   p <- cars %>% ggplot(aes(speed, dist)) + geom_point()
   p <- p + geom_abline(intercept = input$intercept, slope = input$slope, color = "red")
-
   p
 })
 ```
 </div>
 
 
-## The Real Linear Model 
+## The Complete Linear Model 
+
+The basic form of a linear model, in a form that works for **real** data:
+
+$$ \underbrace{y_i}_{\text{Observed value}} =
+            \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_1}_{\text{Coefficient}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_2}_{\text{Coefficient}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
+            \ldots +
+            \underbrace{\epsilon_i}_{Error}$$
+            
+- The error $\epsilon$ is a **normally distributed** **random variable** with mean 0, and some unknown standard deviation $\sigma$; $\epsilon \sim  N(0,\sigma)$
+
+Another way to conceptualize a linear regression model is:
+$$ \underbrace{\hat{{\mu_i}}}_{\text{Predicted } \mu \text{ at i}} =
+            \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_1}_{\text{Coefficient}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}}  + 
+            \overbrace{\underbrace{\beta_2}_{\text{Coefficient}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
+            \ldots$$
+where $$y_i \sim N(\mu_i, \sigma)$$
+
+ This conceptualization is more widely applicable and will be used in McElreath's book.
+
+## An Alternative Conceptualization
+
+$$ \underbrace{\hat{{\mu_i}}}_{\text{Predicted } \mu \text{ at i}} =
+            \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_1}_{\text{Coefficient}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}}  + 
+            \overbrace{\underbrace{\beta_2}_{\text{Coefficient}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
+            \ldots; y_i \sim N(\mu_i, \sigma)$$
+
+<div class="columns-2">
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+inputPanel(
+  sliderInput("intercept2", "Intercept", min = -100, max = 100, value = 0),
+  sliderInput("slope2", "Slope", min = -50, max = 50, value = 1),
+  sliderInput("sigma2", "sigma", min = 0, max = 10, value = 1)
+)
+```
+
+```{r, fig.height=1.5, fig.width=2, fig.align='right'}
+library(gridExtra)
+renderPlot({
+  cars$predicted <- with(cars, {input$intercept2 + input$slope2 * speed}) 
+  cars$residuals <- with(cars, {dist - predicted}) 
+  p <- cars %>% ggplot(aes(speed, dist)) + geom_point()
+  p <- p + geom_abline(intercept = input$intercept2, slope = input$slope2, color = "red")
+  p + geom_errorbar(aes(ymin = ifelse(residuals > 0, dist, predicted),
+                        ymax = ifelse(residuals > 0, predicted, dist) ), width = 0 )
+  
+  
+  lim <- c(min(min(cars$residuals),-input$sigma2*5), max(max(cars$residuals),input$sigma2*5))
+  p2 <- cars %>% ggplot(aes(residuals)) + geom_density() + 
+                  stat_function(fun = dnorm, args = list(mean = 0, sd = 1), color = "red") +
+                  scale_x_continuous(limits = lim)
+
+  gridExtra::grid.arrange(p, p2)
+  
+})
+```
+</div>
+
+
+
+
+## Estimation of Linear Model Parameters
 
 The basic form of a linear model, in a form that works for **real** data:
 
@@ -338,16 +399,99 @@ $$ \underbrace{\hat{y_i}}_{\text{Predicted value}} =
             \overbrace{\underbrace{\beta_2}_{\text{Coefficient}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
             \ldots +
             \underbrace{\epsilon_i}_{Error}$$
-- The error $\epsilon$ is a **normally distributed** **random variable** with mean 0, and some unknown standard deviation $\sigma$. ($\epsilon \sim  N(0,\sigma)$)
+            
+- How do we find the *'right'* estimates?
 
-- Another way to conceptualize a linear regression model is:
-$$ \underbrace{\hat{\mu_y}}_{\text{Predicted } \mu \text{ at i}} =
+- First, we need to specify what we want the estimates to be like:
+
+1. Minimize the sum of squared residuals: We need to find $\alpha$, $\beta_1, \beta_2, ...$, such that $\sum_{i=0}^{i=n}{\epsilon_i^2}$ is as small as possible.
+
+2. Maximize the *likelihood* of the model: We need to find  $\alpha$, $\beta_1, \beta_2, ...$ (and $\sigma$) such that $\sum_{i=0}^{i=n}{\epsilon_i^2}$.
+
+- Estimatio
+
+
+## Estimation of Linear Model Parameters
+
+
+$$ \underbrace{\hat{y_i}}_{\text{Predicted value}} =
             \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_1}_{\text{Coefficient}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}}  + 
+            \overbrace{\underbrace{\beta_1}_{\text{Coefficient}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}} + 
             \overbrace{\underbrace{\beta_2}_{\text{Coefficient}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
-            \ldots$$
-where $$y \sim N(\mu_y, \sigma)$$
+            \ldots +
+            \underbrace{\epsilon_i}_{Error}$$
+            
+<div class="columns-2">
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+inputPanel(
+  sliderInput("intercept3", "Intercept", min = -100, max = 100, value = 0),
+  sliderInput("slope3", "Slope", min = -50, max = 50, value = 1)
+)
+```
 
-The second conceptualization will be used in McElreath's book.
+```{r, fig.height=1.5, fig.width=2, fig.align='right'}
+errors <- data.frame()
+library(gridExtra)
+renderPlot({
+  cars$predicted <- with(cars, {input$intercept3 + input$slope3 * speed}) 
+  cars$residuals <- with(cars, {dist - predicted}) 
+  p <- cars %>% ggplot(aes(speed, dist)) + geom_point()
+  p <- p + geom_abline(intercept = input$intercept3, slope = input$slope3, color = "red")
+  p + geom_errorbar(aes(ymin = ifelse(residuals > 0, dist, predicted),
+                        ymax = ifelse(residuals > 0, predicted, dist) ), width = 0 )
+  
+  errors <<- rbind(errors, data.frame(intercept = input$intercept3, slope = input$slope3, sum_sq = sum(cars$residuals^2) )) %>% unique()
+  
+  p2 <- errors %>% ggplot(aes(intercept, slope, color = sum_sq)) + geom_point(alpha = 0.25) + theme_bw()
+  
+
+  gridExtra::grid.arrange(p, p2)
+  
+})
+```
+</div>
+
+
+## A Problem with Linear Models?
+Let's take a look at a **univariate** linear model on a subset of a **real** dataset:  the `cars` dataset in R, containing car speed and distance taken to stop (in the 1920s).
+
+<div class="columns-2">
+- Model: dist $=$ $\alpha$ $+$ $\beta$ $*$ $speed$
+- Coefficients: $\alpha = -48$, $\beta = 5$
+- So what can we learn from this model's intercept and slope?
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+inputPanel(
+  checkboxInput("lineOnX", label = "Show Model:", value = FALSE),
+  checkboxInput("coefsOnX", label = "Show Coefficients:", value = FALSE)
+)
+```
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+renderPlot({
+  coefs <- coef(lm(dist ~ speed, cars))
+  a = coefs[1]; b1 = coefs[2];
+  p <- cars %>% ggplot(aes(speed, dist)) + geom_point()
+  if (as.logical(input$lineOnX)) {
+    p <- p + geom_abline(intercept = a, slope = b1, color = "red")
+  }
+  if (!as.logical(input$coefsOnX)) {
+    # p <- p  + scale_x_continuous(limits = c(15, 21)) +
+    #           scale_y_continuous(limits = c(30, 55))
+  } else {
+    # p <- p  + scale_x_continuous(limits = c(0, 21)) +
+    #           scale_y_continuous(limits = c(-50, 55))
+    p <- p + geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
+    
+    p <- p %>% labelled_arrow(c(0,0,0,a), c(1.5, -5), label = "Intercept", color = "blue")
+    
+    p <- (p + geom_segment(data=NULL, aes(x=0, y=a, xend=1, yend=a), color = "green")) %>%
+              labelled_arrow(c(1,a,1,a+b1), c(2.5, -15), label = "Slope", color = "green")
+  }
+  p
+  #p + geom_text()
+})
+```
+</div>
 
             
