@@ -122,8 +122,8 @@ The basic form of a linear model, in a form that works for *idealized* data:
 <!-- \underbrace{\hat{y}}_{\text{Predicted value}} = -->
 $$ \color{red}{ \underbrace{y}_{\text{Predicted value}} } =
             \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_1}_{\text{Coefficient}} * \underbrace{x_1}_{Predictor}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_2}_{\text{Coefficient}} * \underbrace{x_2}_{Predictor}}^{\text{additive term}} +  
+            \overbrace{\underbrace{\beta_1}_{\text{Slope}} * \underbrace{x_1}_{Predictor}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_2}_{\text{Slope}} * \underbrace{x_2}_{Predictor}}^{\text{additive term}} +  
             \ldots$$
 <!--  \overbrace{\ldots}^{\text{more additive terms}} -->
             
@@ -330,8 +330,8 @@ The basic form of a linear model, in a form that works for **real** data:
 
 $$ \underbrace{y_i}_{\text{Observed value}} =
             \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_1}_{\text{Coefficient}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_2}_{\text{Coefficient}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
+            \overbrace{\underbrace{\beta_1}_{\text{Slope}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_2}_{\text{Slope}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
             \ldots +
             \underbrace{\epsilon_i}_{Error}$$
             
@@ -340,8 +340,8 @@ $$ \underbrace{y_i}_{\text{Observed value}} =
 Another way to conceptualize a linear regression model is:
 $$ \underbrace{\hat{{\mu_i}}}_{\text{Predicted } \mu \text{ at i}} =
             \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_1}_{\text{Coefficient}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}}  + 
-            \overbrace{\underbrace{\beta_2}_{\text{Coefficient}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
+            \overbrace{\underbrace{\beta_1}_{\text{Slope}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}}  + 
+            \overbrace{\underbrace{\beta_2}_{\text{Slope}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
             \ldots$$
 where $$y_i \sim N(\mu_i, \sigma)$$
 
@@ -351,8 +351,8 @@ where $$y_i \sim N(\mu_i, \sigma)$$
 
 $$ \underbrace{\hat{{\mu_i}}}_{\text{Predicted } \mu \text{ at i}} =
             \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_1}_{\text{Coefficient}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}}  + 
-            \overbrace{\underbrace{\beta_2}_{\text{Coefficient}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
+            \overbrace{\underbrace{\beta_1}_{\text{Slope}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}}  + 
+            \overbrace{\underbrace{\beta_2}_{\text{Slope}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
             \ldots; y_i \sim N(\mu_i, \sigma)$$
 
 <div class="columns-2">
@@ -377,7 +377,7 @@ renderPlot({
   
   lim <- c(min(min(cars$residuals),-input$sigma2*5), max(max(cars$residuals),input$sigma2*5))
   p2 <- cars %>% ggplot(aes(residuals)) + geom_density() + 
-                  stat_function(fun = dnorm, args = list(mean = 0, sd = 1), color = "red") +
+                  stat_function(fun = dnorm, args = list(mean = 0, sd = input$sigma2), color = "red") +
                   scale_x_continuous(limits = lim)
 
   gridExtra::grid.arrange(p, p2)
@@ -395,8 +395,8 @@ The basic form of a linear model, in a form that works for **real** data:
 
 $$ \underbrace{\hat{y_i}}_{\text{Predicted value}} =
             \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_1}_{\text{Coefficient}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_2}_{\text{Coefficient}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
+            \overbrace{\underbrace{\beta_1}_{\text{Slope}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_2}_{\text{Slope}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
             \ldots +
             \underbrace{\epsilon_i}_{Error}$$
             
@@ -416,16 +416,16 @@ $$ \underbrace{\hat{y_i}}_{\text{Predicted value}} =
 
 $$ \underbrace{\hat{y_i}}_{\text{Predicted value}} =
             \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_1}_{\text{Coefficient}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_2}_{\text{Coefficient}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
+            \overbrace{\underbrace{\beta_1}_{ \text{Slope} } * \underbrace{{x_1}_i}_{\text{Predictor}}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_2}_{\text{Slope}} * \underbrace{{x_2}_i}_{\text{Predictor}}}^{\text{additive term}} +  
             \ldots +
             \underbrace{\epsilon_i}_{Error}$$
             
 <div class="columns-2">
 ```{r, fig.height=2, fig.width=2, fig.align='right'}
 inputPanel(
-  sliderInput("intercept3", "Intercept", min = -100, max = 100, value = 0),
-  sliderInput("slope3", "Slope", min = -50, max = 50, value = 1)
+  sliderInput("intercept3", "Intercept", min = -25, max = -15, value = -18, round = FALSE),
+  sliderInput("slope3", "Slope", min = 2, max = 6, value = 4, round = FALSE)
 )
 ```
 
@@ -442,7 +442,7 @@ renderPlot({
   
   errors <<- rbind(errors, data.frame(intercept = input$intercept3, slope = input$slope3, sum_sq = sum(cars$residuals^2) )) %>% unique()
   
-  p2 <- errors %>% ggplot(aes(intercept, slope, color = sum_sq)) + geom_point(alpha = 0.25) + theme_bw()
+  p2 <- errors %>% ggplot(aes(intercept, slope, color = sum_sq)) + geom_point(size=5) + theme_bw()
   
 
   gridExtra::grid.arrange(p, p2)
