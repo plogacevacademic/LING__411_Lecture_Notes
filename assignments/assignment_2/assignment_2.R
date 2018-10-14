@@ -36,8 +36,9 @@ lm (r ~ p, data = df)
 #         the longest LengthOfTheme value for each verb. Call the column containing the maximum of LengthOfTheme max_LengthOfTheme.
 
 # step 2: take a subset of theme_max_len_by_verb
+subset(theme_max_themelen_by_verb, max_LengthOfTheme == max(max_LengthOfTheme))
 
-## Bonus question: Why does the code below produce a different result than the code under the previous comment?
+## Bonus question: Why does the code a produce a different result than the code under the previous comment?
 ## Hint: It has to do with the difference between '=' and '=='.
 
 
