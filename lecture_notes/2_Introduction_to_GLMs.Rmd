@@ -1,0 +1,472 @@
+---
+title: "Linear Models and Generalized Linear Models as Descriptive Tools"
+author: "Pavel Logacev"
+date: "October 14, 2018"
+output: 
+  html_document:
+    number_sections: true
+    fig_caption: true
+    toc: true
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Statistical Models
+- Phenomenological models
+- Mechanistic models / Process models
+- Statistical Models vs. Functional/Deterministic Models
+
+
+
+# Deterministic Linear Models 
+
+In this section we are going to explore **deterministic** linear models, i.e. linear models that work on **idealized** data, when there is no measurement error. The basic form of a linear regression model, in a form that works for *idealized* data:
+<!-- 
+- What is regression?
+- What is linear about this model?
+-->
+
+$$ \underbrace{y}_{\text{Observed value}} =
+            \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_1}_{\text{Slope}} * \underbrace{x_1}_{\text{Predictor}}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_2}_{\text{Slope}} * \underbrace{x_2}_{\text{Predictor}}}^{\text{additive term}} +  
+            \ldots$$
+<!--  \overbrace{\ldots}^{\text{more additive terms}} -->
+            
+Two types are usually distinguished: *single-variable*, and *multi-variable* (also: *simple linear regression*, *multiple linear regression*).
+<!-- 'univariate', and 'multivariate' stand for the number of dependent variables, *not* the number of predictors  -->
+
+Throughout this course, we will make use of the (Generalized) Linear Model as the main statistical model because it is:
+
+- fairly easy to use
+
+- suffficiently versatile for most practical purposes
+
+- well-studied
+
+
+
+
+```{r echo=FALSE, results='hide', message=FALSE}
+library(tidyverse)
+library("scatterplot3d")
+library(magrittr)
+library(languageR)
+library(ggplot2)
+theme_set(theme_bw())
+
+labelled_arrow <- function(p, x_start, y_start, x_end, y_end, x_label, y_label, label, color, arrowhead_size = unit(0.2, "cm")) {
+    p + geom_segment(data=NULL, aes(x=x_start, y=y_start, xend=x_end, yend=y_end), 
+                        color = color, arrow = arrow(length = arrowhead_size), size = 1) + 
+          geom_text(x = x_label, y = y_label, label = label, color = color)
+}
+
+labelled_slope_arrow <- function(p, x_start, y_start, x_end, y_end, 
+                                 x_label, y_label, label, color, 
+                                 arrowhead_size = unit(0.2, "cm"))
+{
+    p <- p + geom_segment(data=NULL, aes(x=x_start, y=y_start, xend=x_end, yend=y_start), color = color, size = 1)
+    p %>% labelled_arrow(x_start = x_end, y_start = y_start, x_end = x_end, y_end = y_end, 
+                         x_label = x_label, y_label = y_label, label = label, color = color)
+}
+
+cab_intercept <- 4.0
+cab_slope_distance <- 2.5
+cab_slope_nbridges <- 5
+cab_slope_color_red <- 30
+cab_bridge <- 10
+
+cab_fares <- data.frame( distance_km = c(3,7,9,11,12,13,12,16,18) ) # ,22,27
+cab_fares$fare_mnt <- cab_intercept + cab_slope_distance * cab_fares$distance_km
+
+cars_perfect <- data.frame(speed = 1, weight = 1, distx = 1, dist = 1)
+
+```
+
+
+## Single-variable Model
+
+Let's take a look at a dataset of taxi rides in an unknown city. Imagine that I have taken `r nrow(cab_fares)` taxi rides, and recorded the travel distance, as well as the taxi fare for reach ride. 
+The following plot shows each of these measurements as a point with the distances (in km) on the x-axis, and the fare (in Mongolian tögrög; MNT) on the y-axis. This dataset is interesting, because you probably understand the typical relationships between ride distance and fare fairly well, so it is an ideal example for illustrating linear models.
+
+```{r carsPerfect1, fig.height=2.5, echo=FALSE}
+cab_fares %>% ggplot(aes(distance_km, fare_mnt)) + geom_point() + xlab("distance (km)") + ylab("fare (MNT)")
+```
+
+Unsurprisingly, we can see clearly that the fare increases with distance. In other words, *distance* and *fare* have a positive relationship (if one increases, so does the other). 
+The relationship between the two variables is so strong that if we know the value of one of the two variables for a particular data point, we can predict the value of the other with a high degree of confidence. (You might want to say that I can predict if with *absolute certainty*, but that presupposes precise knowledge of the cab fare system in that city, *and* an extreme degree of trust towards the local taxi drivers. Let's assume that we don't have either.)
+
+We can make that prediction with such a high degree of certainty because all the points seem to lie on a line. If we learned the function that describes this line, we could learn much more from this dataset than the simple fact that the two variables a positive correlated. That is unsurprising to begin with, but we may want to know **how exactly** they are related. 
+
+A simple way to capture this relationship is to try and describe it with this function:
+
+$$ \text{fare} = a + b * \text{distance} $$
+
+What this equation says is that if we take a value for distance, multiply it by *some number* called $b$, and then add *another number* called $a$, we will know the fare that corresponds to this distance. (In other words, this equation posits that the relationship between *distance* and *fare* is - at least approximately - linear.[^1]) In this particular case the relationship is $\text{fare} = 4 + 2.5 * \text{distance}$, which means that $a=4$, and $b=2.5$. We can verify that this equation is indeed the correct generalization by visualizing this function as a line in the plot below: As you can see, it accurately describes all the points in the graph. 
+
+[^1]: Please note that we don't neeed to assume that the *'true relationship'* between the two variables is actually linear. Most interesting relationships are not linear. However, we can still learn a lot about them from a linear model as you will see in the following.
+<!-- to-do: In the following, sprinkle in sections about what we can still learn even if the relationship is not actually linear. -->
+
+```{r carsPerfect2, fig.height=2.5, echo=FALSE}
+cab_fares %>% ggplot(aes(distance_km, fare_mnt)) + geom_point() + xlab("distance (km)") + ylab("fare (MNT)") + geom_abline(intercept = 4, slope = 2.5, color = "red")
+```
+
+Importantly, if we conceptualize $a$ and $b$ as just some numbers that we need to add and multiply by, we will miss an important insight: Both numbers have useful interpretations. In this case, $a$ and $b$ can be interpreted as follows: 
+
+- $a$ (called the **intercept**) can be interpreted as the value of *fare* when *distance* is 0. In this case, the intercept is $4~MNT$, which is the amount you have to pay if you get in and change your mind after the taxometer has been switched on (if the taxi driver is a real stickler for rules).
+
+- $b$ (called the **slope** for **distance**) can be interpreted as the additional amount of money you have to pay for every additional kilometer travelled. A slope of $2.5$ means that a distance increase of $1~km$ increases the stopping distance by $2.5~MNT$.   
+
+The plot below illustrates these interpretations:
+
+```{r, fig.height=3.5, echo=FALSE}
+  a = 4; b1 = 2.5;
+
+  p <- cab_fares %>% ggplot(aes(distance_km, fare_mnt)) + geom_point()
+  p <- p + geom_hline(yintercept = 0) + geom_vline(xintercept = 0) + 
+            geom_abline(intercept = a, slope = b1, color = "red")
+  
+  p <- p %>% labelled_arrow(x_start=0, y_start=0, x_end=0, y_end=a,
+                            x_label = 1.5, y_label = 2, 
+                            label = "Intercept", color = "blue")
+
+  p %>% labelled_slope_arrow(x_start=0, y_start=a, x_end=1, y_end=a+b1, 
+                             x_label = 2, y_label = a+b1/2, label = "Slope", color = "green")
+
+```
+
+<!-- TODO: Take-away message. -->
+
+
+## Multi-variable Model
+
+```{r }
+
+n = 100 
+set.seed(123)
+cab_fares2 <- data.frame(
+        distance_km = runif(n, min=3, max=27) %>% round(),
+        n_bridges = runif(n, min=1, max=10) %>% round()
+              )
+cab_fares2$fare_mnt <- with(cab_fares2, cab_intercept + cab_slope_distance*distance_km + 
+cab_slope_nbridges*n_bridges)
+
+cab_fares$n_bridges <- 1
+cab_fares2 %<>% bind_rows(cab_fares)
+
+```
+
+Let's imagine that this imaginary city has many bridges. Since I wasn't sure whether bridge tolls apply, I also recorded the number of bridges crossed on each trip. In the previous section, we've looked at the subset of data where no bridges were crossed. Let's see how the fare depends not only on distance travelled, but also on the number of bridges crossed.
+
+Now, we are looking at the relationship between three variables, and the data frame looks as follows:
+
+```{r }
+DT::datatable(cab_fares2, options = list(searching = FALSE))
+```
+
+We will again assume that the relationship between fare, distance and number of bridges is linear, and that they contribute to the fare independently. We can now describe the relationship with the following equation:
+$$ fare = a + b_1 * distance + b_2 * N_{bridges} $$
+The correct parameter values for this equation are $a=4$, $b_1 = 2.5$ (as previously), and $b_2=5$. The interpretation of the coefficients is similar to the previous section:
+
+- $a$ (the **intercept**) is the fare when no bridges have been crossed, and the travel distance is zero.[^2] 
+
+- $b_1$ (the **slope** for **distance**) is the additional fare for every additional kilometer.
+
+- $b_2$ (the **slope** for **$N_{bridges}$**) is the additional fare for every additional bridge.
+
+[^2]: While the number of bridges depends on distance, it is in principle possible to cross a bridge while keeping the travel distance below a kilometer, in which case it would count as zero.
+
+<!-- Consider 
+- integrating how the intercept wouldn't make any sense with number of passengers. 
+- use day/night for an interaction. 
+-->
+
+The following plot shows the data vis-à-vis the linear model fits. Because we are dealing with a relationship between three variables, every datapoint is a point in three-dimensional space (x-axis: distance, y-axis: number of bridges, z-axis: fare). The multi-variable model fit is illustrated by the black plane which rises with increasing distance and/or number of bridges crossed.
+
+If you enable the display of the single-variable model from the last section, you'll see that it also describes a plane: However, the plane corresponding to the single-variable model does not rise with the number of bridges crossed. This is because it is not used as a predictor in that model. 
+
+You will also notice that the red plane and the black plane intersect in a line at $N_{bridges} = 0$. This is because the two model equations $a + b_1 * distance$ and  $a + b_1 * distance + b_2 * N_{bridges}$ are equivalent for $N_{bridges} = 0$. 
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+inputPanel(
+  checkboxInput("modelOn", label = "Show multi-variable model:", value = TRUE),
+  checkboxInput("originalModelOn", label = "Show old single-variable model:", value = FALSE),
+  sliderInput("angle", label = "Plot Angle", min = 0, max = 360, value = 125)
+)
+```
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+
+renderPlot({
+  a = cab_intercept; b1 = cab_slope_distance; b2 = cab_slope_nbridges;
+  
+  full_lm <- lm(fare_mnt ~ distance_km + n_bridges, cab_fares2)
+  summary(full_lm)
+
+  angle <- 125
+  if (!is.null(input)) angle <- input$angle
+  s3d <- scatterplot3d(cab_fares2, type = "h", color = "blue", angle=angle, pch = 16) # input$value
+  #s3d$plane3d(Intercept = -48, x.coef = 0, y.coef = 5, col = "blue")
+  
+  if (as.logical(input$modelOn)) {
+    s3d$plane3d(Intercept = 4, x.coef = 2.5, y.coef = 5)
+  }
+  if (as.logical(input$originalModelOn)) {
+    s3d$plane3d(Intercept = 10, x.coef = 2.5, y.coef = 0, col = "red")
+  }
+  s3d
+})
+```
+
+
+## Categorical Predictors
+
+Predictors on the **nominal** or **ordinal scale** (as opposed to **ratio**, or **interval scale**) are not naturally represented by numbers. 
+For example: Speaker gender, Presence or absence of wh-movement, word order (e.g., SOV, SVO, VSO), size (long, short).
+We can represent them numerically, but there are many coding options. We can represent a factor with two levels by 0 and 1, or by -1 and 1, or by +0.5 and -0.5. 
+
+In the case of the taxi fares, one such predictor is the color of the taxi: I've observed red and blue taxis, and I didn't know if there is possibly a difference in their pricing. In order to determine whether there is, I decided to take a ride in both types. (All the data in the previous sections was for yellow cabs only.)
+
+The following plot shows the relationship between fare and cab color (for $distance=10~km$, and $N_{bridges} = 0$). The x-axis shows the **contrast** for cab color (*the numerical representation of of the categorical variable 'color'*). The y-axis shows the cab fare. 
+
+While the choice of the coding scheme is somwewhat arbitraty, it will affect the interpretation of the coefficients.
+<!-- Make sure whe word 'coefficients' is known at this point, ideally by moving the deterministic form of the LM forward. -->
+In other words, **model parameterization** (or: **contrast specification**) affects the meaning of the coefficients. 
+We will use the following equation to describe the relationship:
+
+
+$$ \text{fare} = a + b * \text{cCabColor} $$, where $cCabColor$ is a numerical representation of the cab color. 
+
+We can use **treatment contrasts** (yellow = 0, red = 1) or **sum contrasts** (yellow = -0.5, red = 0.5). 
+
+When we use **treatment contrasts**, the coefficients receive the following interpretation:
+
+- $a$: the fare ride in a yellow taxi (for a $10 km$ ride, when no bridges have been crossed).
+
+- $b$: the fare difference between a ride in a red taxi and a yellow taxi (for a $10 km$ ride, when no bridges have been crossed).
+
+When we use **sum contrasts**, the coefficients receive the following interpretation:
+
+- $a$ the average of the fares for a ride in a yellow taxi and one in a red taxi (for a $10 km$ ride, when no bridges have been crossed).[^3] 
+
+- $b$ the fare difference between a ride in a red taxi and a yellow taxi (for a $10 km$ ride, when no bridges have been crossed).
+
+[^3]: Please note that it is the average of the two fares, and **not** the average fare. <!-- Explain how they are different -->
+
+
+
+```{r }
+
+n = 30 
+cab_fares3 <- data.frame(
+        distance_km = 10,
+        n_bridges = 0,
+        cab_color_red = c(0, 1)
+        )
+cab_fares3$fare_mnt <- with(cab_fares3, cab_intercept + cab_slope_distance*distance_km + 
+cab_slope_nbridges*n_bridges + 
+cab_slope_color_red*cab_color_red)
+
+```
+
+```{r}
+inputPanel(
+   selectInput("contrastCat1", "Contrast:",
+              c("Treatment Contrast" = "treat",
+                "Sum Contrast" = "sum")),
+  checkboxInput("lineOnCat1", label = "Show Model:", value = FALSE),
+  checkboxInput("coefsOnCat1", label = "Show Coefficients:", value = FALSE)
+)  
+
+```
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+
+renderPlot({
+
+  if (exists("input") && input$contrastCat1 == "sum") {
+    cab_fares3$cCab_color_red <- cab_fares3$cab_color_red - 0.5 
+  } else {
+    cab_fares3$cCab_color_red <- cab_fares3$cab_color_red
+  }
+  
+  coefs <- coef(lm(fare_mnt ~ cCab_color_red, cab_fares3))
+  a = coefs[1]; b1 = coefs[2];
+
+
+  p <- cab_fares3 %>% ggplot(aes(cCab_color_red, fare_mnt)) + geom_point() + xlab("cab color contrast") + ylab("fare (MNT)")
+  
+  if (as.logical(input$lineOnCat1)) {
+    p <- p + geom_abline(intercept = a, slope = b1, color = "red")
+  }
+  if (!as.logical(input$coefsOnCat1)) {
+    #p <- p  + scale_x_continuous(limits = c(15, 21)) +
+    #          scale_y_continuous(limits = c(30, 55))
+  } else {
+    #p <- p  + scale_x_continuous(limits = c(0, 1)) +
+    #          scale_y_continuous(limits = c(0, 1))
+    p <- p + geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
+    
+    p <- p %>% labelled_arrow(x_start = 0, y_start = 0,
+                              x_end = 0, y_end = a, 
+                              x_label = .1, y_label = 8, 
+                              label = "Intercept", color = "blue")
+    
+    p <- p %>% labelled_slope_arrow(x_start = 0, y_start = a,
+                                    x_end = 1, y_end = a + b1,
+                                    x_label = .9, y_label = 40,
+                                    label = "Slope", color = "green")
+      
+  }
+  p + ggtitle(sprintf("%0.2f + %0.2f*x", a, b1))
+})
+```
+
+
+
+
+## Centering predictors and its effect on intercepts
+
+Now let's imagine that I don't know if the number of passengers affects the fare. So far I've been riding alone. Now let's look at a few rides with several other people ($distance = 10~km$, $N_{bridges} = 0$, yellow cabs only). 
+
+```{r }
+
+n = 30
+cab_slope_npassengers = 5
+  
+cab_fares4 <- data.frame(
+        distance_km = 10,
+        n_bridges = 0,
+        cab_color_red = 0,
+        n_passengers = runif(n, min = 1, max = 4) %>% round()
+        )
+
+cab_fares4$fare_mnt <- with(cab_fares4, cab_intercept + 
+                                        cab_slope_distance * distance_km + 
+                                        cab_slope_nbridges * n_bridges + 
+                                        cab_slope_color_red * cab_color_red +
+                                        cab_slope_npassengers * (n_passengers-1)
+                                        )
+
+```
+
+
+As previously, we will model the relationship with a linear equation:
+
+$$ \text{fare} = a + b * \text{number of passengers} $$
+
+However if we model it like this, our intercept is `r cab_intercept + 10*cab_slope_distance - 1*cab_slope_npassengers` as you see in the plot below, and not `r cab_intercept + 10*cab_slope_distance`, as we would expect. We did travel 10 km, after all. - Why is the fare so low?
+
+The reason is that the intercept is the value of the fare when **all** predictors are 0 - yes, even the number of passengers. Barring any extremely unusual situations, this is not actually possible, and therefore an intercept of this kind is really just a number we need to plug into the equation. In other words, we don't learn anything from it.
+
+In order to remedy the situation and obtain a more useful intercept, we can **center** the predictor - that is, subtract the average of the vector from the vector itself. In this case, we will use
+
+$$ \text{fare} = a + b * (\text{number of passengers}-2.5) $$
+
+
+This will leave us with the following interpretations of the coefficients:
+
+- $a$: the fare paid for the average number of passengers, in this case for 2.5 passengers (on a 10 km ride, crossing 0 bridges, in a yellow cab)
+
+- $b$: the additional fare for every additional passenger (on a 10 km ride, crossing 0 bridges, in a yellow cab)
+
+
+```{r}
+inputPanel(
+  checkboxInput("centerPassengers", label = "Center passengers:", value = FALSE),
+  checkboxInput("lineOnPassengers", label = "Show Model:", value = FALSE),
+  checkboxInput("coefsOnPassengers", label = "Show Coefficients:", value = FALSE)
+)  
+```
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+
+renderPlot({
+
+  if (exists("input") && input$centerPassengers) {
+    cab_fares4$cn_passengers <- cab_fares4$n_passengers - 2.5
+  } else {
+    cab_fares4$cn_passengers <- cab_fares4$n_passengers
+  }
+  
+  coefs <- coef(lm(fare_mnt ~ cn_passengers, cab_fares4))
+  a = coefs[1]; b1 = coefs[2];
+
+
+  p <- cab_fares4 %>% ggplot(aes(cn_passengers, fare_mnt)) + geom_point() + xlab("number of passengers") + ylab("fare (MNT)")
+  
+  if (as.logical(input$lineOnPassengers)) {
+    p <- p + geom_abline(intercept = a, slope = b1, color = "red")
+  }
+  if (!as.logical(input$coefsOnPassengers)) {
+    #p <- p  + scale_x_continuous(limits = c(15, 21)) +
+    #          scale_y_continuous(limits = c(30, 55))
+  } else {
+    #p <- p  + scale_x_continuous(limits = c(0, 1)) +
+    #          scale_y_continuous(limits = c(0, 1))
+    p <- p + geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
+    
+    p <- p %>% labelled_arrow(x_start = 0, y_start = 0,
+                              x_end = 0, y_end = a, 
+                              x_label = .5, y_label = 8, 
+                              label = "Intercept", color = "blue")
+    
+    p <- p %>% labelled_slope_arrow(x_start = 0, y_start = a,
+                                    x_end = 1, y_end = a + b1,
+                                    x_label = 1.25, y_label = 28,
+                                    label = "Slope", color = "green")
+      
+  }
+  p + ggtitle(sprintf("%0.2f + %0.2f*x", a, b1))
+})
+```
+
+
+
+
+## Main Effects and Intreractions
+
+So far, we've assumed that the effects of all variables are strictly additive. What if they are not?
+Previously, we've only looked at taxi rides during the day. What about night fares? 
+(We're looking at $$N_{bridges} = 0$, yellow cabs only, one passenger). 
+
+We could model the relationship with the following equation, but in doing so we would neglect that night fares might not be an additive constant, such as $b$ in the equation below, but might actually affect the price paid per kilometer.
+$$ \text{fare} = a + b * cNight$$, where $cNight$ is the contast for whether or not we're riding at night time.
+
+It turns out that we can account for that too:
+
+$$ \text{fare} = a + b_1 * distance + b_2 * cNight + b_3 * distance * cNight $$
+
+
+
+
+```{r, eval = FALSE }
+
+n = 30
+cab_slope_night = 10
+cab_slope_nightByDistance = 1
+  
+cab_fares5 <- data.frame(
+        distance_km = 10,
+        n_bridges = 0,
+        cab_color_red = 0,
+        n_passengers = 1,
+        is_night = c(0,1)
+        )
+
+cab_fares5$fare_mnt <- with(cab_fares5, cab_intercept + 
+                                        cab_slope_distance * distance_km + 
+                                        cab_slope_nbridges * n_bridges + 
+                                        cab_slope_color_red * cab_color_red +
+                                        cab_slope_npassengers * (n_passengers-1) +
+                              
+                                        cab_slope_night * is_night +
+                                        cab_slope_nightByDistance * is_night * distance
+                                        )
+
+```
+
+<!-- Go through a calculation in a little table, to see how the process works with non-centered and with centered predictors -->
