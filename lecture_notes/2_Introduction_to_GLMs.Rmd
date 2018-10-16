@@ -470,3 +470,116 @@ cab_fares5$fare_mnt <- with(cab_fares5, cab_intercept +
 ```
 
 <!-- Go through a calculation in a little table, to see how the process works with non-centered and with centered predictors -->
+
+<!-- In all these sections, I never actually tell how I arrive at the model estimates. I should probably mention this in a few words somewhere at the beginning of the section. -->
+
+## Effects of Omitted Variables
+
+So far, we have been working with specific subsets of the data which kept all variables that were irrelevant for our present purposes constant (e.g., $distance=10~km$, $N_{bridges} = 0$). We were able to do that because we knew which variables are relevant since the dataset was created artificially. In real-life scenarios this is not always possible - not even when describing a deterministic system such as the cab fare pricing scheme. This is because (i) we often don't know all the relevant variables, (ii) we don't know in which ways they may interact, and (iii) even if we knew all that, we may be left with very little data if we keep taking subsets with specific characteristics all the time. (For example, a dataset with $N_{bridges} = 0$ may not have a lot of rides with $distance > 1~km$ if the city has many bridges, as I said it did.)   
+<!-- Include this?: Moreover, some variables may not have been recorded. --> 
+
+The bottom line is that in any realistic situation, we will omit relevant predictors from the model specification. Let's look at how this would affect our analysis by applying a single-variable model to the data from section 2.2, which varies in distance an number of bridges.
+We will use a the single-variable model
+
+$$ fare = a + b * distance$$
+
+
+The plot below is not as clean as the previous plots - and it doesn't seem to be possible to perfectly describe all the points by one line. While the average fare seems to increase with distance, there is also quite a lot of variability. This is because the number of bridge crossings is neglected here. It is as if we were looking at a photo of a three-dimensional plot from the side.
+
+
+We can still fit our linear model, but with one important difference: For the previous models, the coefficients were chosen sucht that the fare was predicted with absolute precision. Our system was deterministic since we knew every every variable that mattered and how it was to be included into the linear model equation. Once we neglect some variables, the system becomes non-deterministic - we can't predict the fare exactly, since we don't use the information about bridges.  
+
+
+```{r}
+inputPanel(
+  checkboxInput("centerOmitted", label = "Center distance:", value = FALSE),
+  checkboxInput("lineOnOmitted", label = "Show Model:", value = FALSE),
+  checkboxInput("coefsOnOmitted", label = "Show Coefficients:", value = FALSE)
+)  
+```
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+
+renderPlot({
+
+  if (exists("input") && input$centerOmitted) {
+    cab_fares2$tDistance  <- cab_fares2$distance - mean(range(cab_fares2$distance))
+  } else {
+    cab_fares2$tDistance <- cab_fares2$distance
+  }
+  
+  coefs <- coef(lm(fare_mnt ~ tDistance, cab_fares2))
+  a = coefs[1]; b1 = coefs[2];
+
+  p <- cab_fares2 %>% ggplot(aes(tDistance, fare_mnt)) + geom_point() + xlab("distance") + ylab("fare (MNT)")
+  
+  if (as.logical(input$lineOnOmitted)) {
+    p <- p + geom_abline(intercept = a, slope = b1, color = "red")
+  }
+  if (!as.logical(input$coefsOnOmitted)) {
+    #p <- p  + scale_x_continuous(limits = c(15, 21)) +
+    #          scale_y_continuous(limits = c(30, 55))
+  } else {
+    #p <- p  + scale_x_continuous(limits = c(0, 1)) +
+    #          scale_y_continuous(limits = c(0, 1))
+    p <- p + geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
+    
+    p <- p %>% labelled_arrow(x_start = 0, y_start = 0,
+                              x_end = 0, y_end = a, 
+                              x_label = 3, y_label = 8, 
+                              label = "Intercept", color = "blue")
+    
+    p <- p %>% labelled_slope_arrow(x_start = 0, y_start = a,
+                                    x_end = 1, y_end = a + b1,
+                                    x_label = 3, y_label = 28,
+                                    label = "Slope", color = "green")
+      
+  }
+  p + ggtitle(sprintf("%0.2f + %0.2f*x", a, b1))
+})
+```
+
+
+In order to account for omitted variables (or possibly true randomness in the data), we need to modify the linear model equation to the form below. 
+
+<!-- Improve the phrasing below. -->
+All *constant effects* of the omitted (or even unknown variables) are absorbed into the intercept. (Importantly, the same would happen if those variables were not omitted, but their predictors were centered.)
+<!-- There is a lot to expand upon in that above statment. -->
+
+Meanwhile all the *variable effects* are absorbed into the error term $\epsilon$, which is assumed ot be a **normally distributed** **random variable** with mean 0, and some unknown standard deviation $\sigma$; $\epsilon \sim  N(0,\sigma)$
+
+$$ \underbrace{y_i}_{\text{Observed value}} =
+            \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_1}_{\text{Slope}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_2}_{\text{Slope}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
+            \ldots +
+            \underbrace{\epsilon_i}_{Error}$$
+            
+            
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+inputPanel(
+  sliderInput("intercept3", "Intercept", min = -25, max = -15, value = -18, round = FALSE),
+  sliderInput("slope3", "Slope", min = 2, max = 6, value = 4, round = FALSE)
+)
+```
+
+```{r, fig.height=1.5, fig.width=2, fig.align='right'}
+errors <- data.frame()
+library(gridExtra)
+renderPlot({
+  cab_fares2$predicted <- with(cab_fares2, {input$intercept3 + input$slope3 * distance_km}) 
+  cab_fares2$residuals <- with(cab_fares2, {fare_mnt - predicted}) 
+  
+  p <- cab_fares2 %>% ggplot(aes(distance_km, fare_mnt)) + geom_point()
+  p <- p + geom_abline(intercept = input$intercept3, slope = input$slope3, color = "red")
+  p + geom_errorbar(aes(ymin = ifelse(residuals > 0, dist, predicted),
+                        ymax = ifelse(residuals > 0, predicted, dist) ), width = 0 )
+  
+  errors <<- rbind(errors, data.frame(intercept = input$intercept3, slope = input$slope3, avg_err = mean(abs(cars$residuals)) )) %>% unique()
+  
+  p2 <- errors %>% ggplot(aes(intercept, slope, color = avg_err)) + geom_point(size=5) + theme_bw()
+
+  gridExtra::grid.arrange(p, p2)
+  
+})
+```
