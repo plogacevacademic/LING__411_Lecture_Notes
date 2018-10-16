@@ -559,25 +559,44 @@ $$ \underbrace{y_i}_{\text{Observed value}} =
 ```{r, fig.height=2, fig.width=2, fig.align='right'}
 inputPanel(
   sliderInput("intercept3", "Intercept", min = -25, max = -15, value = -18, round = FALSE),
-  sliderInput("slope3", "Slope", min = 2, max = 6, value = 4, round = FALSE)
+  sliderInput("slope3", "Slope", min = 2, max = 6, value = 4, round = FALSE),
+  checkboxInput("reset3", "Reset", value = FALSE)
 )
 ```
 
 ```{r, fig.height=1.5, fig.width=2, fig.align='right'}
 errors <- data.frame()
+
+for (intercept in seq(20, 30, .5)) {
+  for(slope in seq(0, 5, .1)) {
+    cab_fares2$predicted <- with(cab_fares2, {intercept + slope * distance_km}) 
+    cab_fares2$residuals <- with(cab_fares2, {fare_mnt - predicted}) 
+
+    errors <- rbind(errors, data.frame(intercept = intercept, slope = slope, avg_err = mean(abs(cab_fares2$residuals)) )) %>% unique()
+
+  }
+}
+
+
+
 library(gridExtra)
 renderPlot({
+  
+  if (input$reset3) {
+      errors <<- data.frame()
+  }
+
   cab_fares2$predicted <- with(cab_fares2, {input$intercept3 + input$slope3 * distance_km}) 
   cab_fares2$residuals <- with(cab_fares2, {fare_mnt - predicted}) 
+  errors <<- rbind(errors, data.frame(intercept = input$intercept3, slope = input$slope3, avg_err = mean(abs(cab_fares2$residuals)) )) %>% unique()
   
   p <- cab_fares2 %>% ggplot(aes(distance_km, fare_mnt)) + geom_point()
   p <- p + geom_abline(intercept = input$intercept3, slope = input$slope3, color = "red")
   p + geom_errorbar(aes(ymin = ifelse(residuals > 0, dist, predicted),
                         ymax = ifelse(residuals > 0, predicted, dist) ), width = 0 )
   
-  errors <<- rbind(errors, data.frame(intercept = input$intercept3, slope = input$slope3, avg_err = mean(abs(cars$residuals)) )) %>% unique()
   
-  p2 <- errors %>% ggplot(aes(intercept, slope, color = avg_err)) + geom_point(size=5) + theme_bw()
+  p2 <- errors %>% ggplot(aes(intercept, slope, color = avg_err)) + geom_point(size=10, alpha = 0.5) + theme_bw()
 
   gridExtra::grid.arrange(p, p2)
   
