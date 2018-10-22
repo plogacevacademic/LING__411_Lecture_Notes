@@ -12,27 +12,43 @@ runtime: shiny
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+set.seed(123)
 ```
 
 # Statistical Models
+
+...
+<!--
 - Phenomenological models
 - Mechanistic models / Process models
 - Statistical Models vs. Functional/Deterministic Models
-
+-->
 
 
 # Deterministic Linear Models 
 
-In this section we are going to explore **deterministic** linear models, i.e. linear models that work on **idealized** data, when there is no measurement error. The basic form of a linear regression model, in a form that works for *idealized* data:
+In this section we are going to explore **deterministic** linear models, i.e. linear models that work on **idealized** data, when there is no measurement error, and when the *'correct'* model describing the data is known.
+
+The typical dataset we will be working with has a structure similar to the one below:
+
+| dependent variable | predictor 1 | predictor 2 | (further predictors) |
+|-----|:----|:-----|:------|
+|2.95 | 1.1 | 2.2  | (...) |
+|9.1  | 2.9 | -4.0 | (...) |
+|5    | 3.1 | -1.4 | (...) |
+| ... | ... | ...  | (...) |
+
+
+The basic form of a linear regression model, in a form that works for *idealized* data:
 <!-- 
 - What is regression?
 - What is linear about this model?
 -->
 
-$$ \underbrace{y}_{\text{Observed value}} =
-            \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_1}_{\text{Slope}} * \underbrace{x_1}_{\text{Predictor}}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_2}_{\text{Slope}} * \underbrace{x_2}_{\text{Predictor}}}^{\text{additive term}} +  
+$$ \underbrace{y}_{\text{dependent variable}} =
+            \overbrace{\underbrace{\alpha}_{\text{intercept}}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_1}_{\text{slope}} * \underbrace{x_1}_{\text{predictor}}}^{\text{additive term}} + 
+            \overbrace{\underbrace{\beta_2}_{\text{slope}} * \underbrace{x_2}_{\text{predictor}}}^{\text{additive term}} +  
             \ldots$$
 <!--  \overbrace{\ldots}^{\text{more additive terms}} -->
             
@@ -78,11 +94,59 @@ cab_slope_distance <- 2.5
 cab_slope_nbridges <- 5
 cab_slope_color_red <- 30
 cab_bridge <- 10
+cab_slope_npassengers <- 5
 
-cab_fares <- data.frame( distance_km = c(3,7,9,11,12,13,12,16,18) ) # ,22,27
-cab_fares$fare_mnt <- cab_intercept + cab_slope_distance * cab_fares$distance_km
+cab_slope_night <- 10
+cab_slope_nightByDistance <- 1
 
-cars_perfect <- data.frame(speed = 1, weight = 1, distx = 1, dist = 1)
+rint_unif <- function(n, min, max) { runif(n=n, min=min-0.499, max=max+0.499) %>% round() }
+
+n = 2000
+cab_fares <- data.frame( distance_km = rint_unif(n, min=3, max=20),
+                         n_bridges = rint_unif(n, min=0, max=10),
+                         cab_color_red = runif(n=n, min=0, max=1) %>% round(),
+                         n_passengers = rint_unif(n, min = 1, max = 4),
+                         is_night =  runif(n=n, min=0, max=1) %>% round()
+                         )
+
+n = 10
+cab_fares %<>% rbind( data.frame( distance_km = rint_unif(n, min=3, max=20),
+                                  n_bridges = rep(0, n),
+                                  cab_color_red = 0,
+                                  n_passengers = 1,
+                                  is_night = 0
+                                )
+                    )
+
+n = 30
+cab_fares %<>% rbind( data.frame( distance_km = rint_unif(n, min=3, max=20),
+                                  n_bridges = rep(0, n),
+                                  cab_color_red = c(0, 1),
+                                  n_passengers = 1,
+                                  is_night = 0
+                                )
+                    )
+
+
+#cars_perfect <- data.frame(speed = 1, weight = 1, distx = 1, dist = 1)
+
+cab_fares <- within(cab_fares, 
+                  { fare_mnt <- cab_intercept + 
+                                cab_slope_distance*distance_km + 
+                                cab_slope_nbridges*n_bridges +
+                                cab_slope_color_red*cab_color_red +
+                                cab_slope_npassengers * (n_passengers-1) +
+                                cab_slope_night * is_night +
+                                cab_slope_nightByDistance * is_night * distance_km
+                                
+                  })
+
+cab_fares1 <- cab_fares %>% subset(n_bridges == 0 & cab_color_red == 0 & n_passengers == 1 & is_night == 0)
+cab_fares2 <- cab_fares %>% subset(cab_color_red == 0 & n_passengers == 1 & is_night == 0)
+cab_fares3 <- cab_fares %>% subset(distance_km == 10 & n_bridges == 0 & n_passengers == 1 & is_night == 0)
+cab_fares4 <- cab_fares %>% subset(distance_km == 10 & n_bridges == 0 & 
+                                   cab_color_red == 0 & n_passengers == 1 & 
+                                   is_night == 0)
 
 ```
 
@@ -93,7 +157,7 @@ Let's take a look at a dataset of taxi rides in an unknown city. Imagine that I 
 The following plot shows each of these measurements as a point with the distances (in km) on the x-axis, and the fare (in Mongolian tögrög; MNT) on the y-axis. This dataset is interesting, because you probably understand the typical relationships between ride distance and fare fairly well, so it is an ideal example for illustrating linear models.
 
 ```{r carsPerfect1, fig.height=2.5, echo=FALSE}
-cab_fares %>% ggplot(aes(distance_km, fare_mnt)) + geom_point() + xlab("distance (km)") + ylab("fare (MNT)")
+cab_fares1 %>% ggplot(aes(distance_km, fare_mnt)) + geom_point() + xlab("distance (km)") + ylab("fare (MNT)")
 ```
 
 Unsurprisingly, we can see clearly that the fare increases with distance. In other words, *distance* and *fare* have a positive relationship (if one increases, so does the other). 
@@ -111,7 +175,7 @@ What this equation says is that if we take a value for distance, multiply it by 
 <!-- to-do: In the following, sprinkle in sections about what we can still learn even if the relationship is not actually linear. -->
 
 ```{r carsPerfect2, fig.height=2.5, echo=FALSE}
-cab_fares %>% ggplot(aes(distance_km, fare_mnt)) + geom_point() + xlab("distance (km)") + ylab("fare (MNT)") + geom_abline(intercept = 4, slope = 2.5, color = "red")
+cab_fares1 %>% ggplot(aes(distance_km, fare_mnt)) + geom_point() + xlab("distance (km)") + ylab("fare (MNT)") + geom_abline(intercept = 4, slope = 2.5, color = "red")
 ```
 
 Importantly, if we conceptualize $a$ and $b$ as just some numbers that we need to add and multiply by, we will miss an important insight: Both numbers have useful interpretations. In this case, $a$ and $b$ can be interpreted as follows: 
@@ -125,7 +189,7 @@ The plot below illustrates these interpretations:
 ```{r, fig.height=3.5, echo=FALSE}
   a = 4; b1 = 2.5;
 
-  p <- cab_fares %>% ggplot(aes(distance_km, fare_mnt)) + geom_point()
+  p <- cab_fares1 %>% ggplot(aes(distance_km, fare_mnt)) + geom_point()
   p <- p + geom_hline(yintercept = 0) + geom_vline(xintercept = 0) + 
             geom_abline(intercept = a, slope = b1, color = "red")
   
@@ -143,28 +207,12 @@ The plot below illustrates these interpretations:
 
 ## Multi-variable Model
 
-```{r }
-
-n = 100 
-set.seed(123)
-cab_fares2 <- data.frame(
-        distance_km = runif(n, min=3, max=27) %>% round(),
-        n_bridges = runif(n, min=1, max=10) %>% round()
-              )
-cab_fares2$fare_mnt <- with(cab_fares2, cab_intercept + cab_slope_distance*distance_km + 
-cab_slope_nbridges*n_bridges)
-
-cab_fares$n_bridges <- 1
-cab_fares2 %<>% bind_rows(cab_fares)
-
-```
-
 Let's imagine that this imaginary city has many bridges. Since I wasn't sure whether bridge tolls apply, I also recorded the number of bridges crossed on each trip. In the previous section, we've looked at the subset of data where no bridges were crossed. Let's see how the fare depends not only on distance travelled, but also on the number of bridges crossed.
 
 Now, we are looking at the relationship between three variables, and the data frame looks as follows:
 
 ```{r }
-DT::datatable(cab_fares2, options = list(searching = FALSE))
+DT::datatable(cab_fares2 %>% dplyr::select(fare_mnt, distance_km, n_bridges), options = list(searching = FALSE))
 ```
 
 We will again assume that the relationship between fare, distance and number of bridges is linear, and that they contribute to the fare independently. We can now describe the relationship with the following equation:
@@ -256,22 +304,6 @@ When we use **sum contrasts**, the coefficients receive the following interpreta
 
 [^3]: Please note that it is the average of the two fares, and **not** the average fare. <!-- Explain how they are different -->
 
-
-
-```{r }
-
-n = 30 
-cab_fares3 <- data.frame(
-        distance_km = 10,
-        n_bridges = 0,
-        cab_color_red = c(0, 1)
-        )
-cab_fares3$fare_mnt <- with(cab_fares3, cab_intercept + cab_slope_distance*distance_km + 
-cab_slope_nbridges*n_bridges + 
-cab_slope_color_red*cab_color_red)
-
-```
-
 ```{r}
 inputPanel(
    selectInput("contrastCat1", "Contrast:",
@@ -332,28 +364,6 @@ renderPlot({
 
 Now let's imagine that I don't know if the number of passengers affects the fare. So far I've been riding alone. Now let's look at a few rides with several other people ($distance = 10~km$, $N_{bridges} = 0$, yellow cabs only). 
 
-```{r }
-
-n = 30
-cab_slope_npassengers = 5
-  
-cab_fares4 <- data.frame(
-        distance_km = 10,
-        n_bridges = 0,
-        cab_color_red = 0,
-        n_passengers = runif(n, min = 1, max = 4) %>% round()
-        )
-
-cab_fares4$fare_mnt <- with(cab_fares4, cab_intercept + 
-                                        cab_slope_distance * distance_km + 
-                                        cab_slope_nbridges * n_bridges + 
-                                        cab_slope_color_red * cab_color_red +
-                                        cab_slope_npassengers * (n_passengers-1)
-                                        )
-
-```
-
-
 As previously, we will model the relationship with a linear equation:
 
 $$ \text{fare} = a + b * \text{number of passengers} $$
@@ -364,7 +374,7 @@ The reason is that the intercept is the value of the fare when **all** predictor
 
 In order to remedy the situation and obtain a more useful intercept, we can **center** the predictor - that is, subtract the average of the vector from the vector itself. In this case, we will use
 
-$$ \text{fare} = a + b * (\text{number of passengers}-2.5) $$
+$$\text{fare} = a + b * (\text{number of passengers}-2.5)$$
 
 
 This will leave us with the following interpretations of the coefficients:
@@ -427,11 +437,11 @@ renderPlot({
 
 
 
-## Main Effects and Intreractions
+## Main Effects and Interactions
 
 So far, we've assumed that the effects of all variables are strictly additive. What if they are not?
 Previously, we've only looked at taxi rides during the day. What about night fares? 
-(We're looking at $$N_{bridges} = 0$, yellow cabs only, one passenger). 
+(We're looking at $N_{bridges} = 0$, yellow cabs only, one passenger). 
 
 We could model the relationship with the following equation, but in doing so we would neglect that night fares might not be an additive constant, such as $b$ in the equation below, but might actually affect the price paid per kilometer.
 $$ \text{fare} = a + b * cNight$$, where $cNight$ is the contast for whether or not we're riding at night time.
@@ -473,21 +483,20 @@ cab_fares5$fare_mnt <- with(cab_fares5, cab_intercept +
 
 <!-- In all these sections, I never actually tell how I arrive at the model estimates. I should probably mention this in a few words somewhere at the beginning of the section. -->
 
-## Effects of Omitted Variables
+# Stochastic Linear Models
 
-So far, we have been working with specific subsets of the data which kept all variables that were irrelevant for our present purposes constant (e.g., $distance=10~km$, $N_{bridges} = 0$). We were able to do that because we knew which variables are relevant since the dataset was created artificially. In real-life scenarios this is not always possible - not even when describing a deterministic system such as the cab fare pricing scheme. This is because (i) we often don't know all the relevant variables, (ii) we don't know in which ways they may interact, and (iii) even if we knew all that, we may be left with very little data if we keep taking subsets with specific characteristics all the time. (For example, a dataset with $N_{bridges} = 0$ may not have a lot of rides with $distance > 1~km$ if the city has many bridges, as I said it did.)   
+
+So far, we have been working with specific subsets of the data which kept all variables that were irrelevant for our present purposes constant (e.g., $distance=10~km$, $N_{bridges} = 0$). We were able to do that because we knew which variables are relevant since the dataset was created artificially. In real-life scenarios this is not always possible - not even when describing a deterministic system such as the cab fare pricing scheme. This is because (i) we often don't know all the relevant variables, (ii) we don't know in which ways they may interact, and (iii) even if we knew all that, we may be left with very little data if we keep taking subsets with specific characteristics all the time. (For example, a dataset with $N_{bridges} = 0$ may not have a lot of rides with $distance > 1~km$ if the city has many bridges, as I said this particular city did.)   
 <!-- Include this?: Moreover, some variables may not have been recorded. --> 
 
 The bottom line is that in any realistic situation, we will omit relevant predictors from the model specification. Let's look at how this would affect our analysis by applying a single-variable model to the data from section 2.2, which varies in distance an number of bridges.
-We will use a the single-variable model
+We will apply the single-variable model in order to model the data from section 2.2 (\textit{i.e., only yellow cabs, one passenger}). In a real-world scenario, we could use a model with missing predictors because because we did not consider those predictors relevant, or because we may not have information on them (\texit{i.e., we didn't record the number of bridges on our taxi rides through town}).
 
 $$ fare = a + b * distance$$
 
 
-The plot below is not as clean as the previous plots - and it doesn't seem to be possible to perfectly describe all the points by one line. While the average fare seems to increase with distance, there is also quite a lot of variability. This is because the number of bridge crossings is neglected here. It is as if we were looking at a photo of a three-dimensional plot from the side.
+The plot below is not as clean as the previous plots - and it doesn't seem to be possible to perfectly describe all the points by one line. While the average fare seems to increase with distance, there is also some variability in the fare at most distances. This is because the number of bridge crossings is unaccounted for. It is as if we were looking at a photo of a three-dimensional plot which was taken from the side.
 
-
-We can still fit our linear model, but with one important difference: For the previous models, the coefficients were chosen sucht that the fare was predicted with absolute precision. Our system was deterministic since we knew every every variable that mattered and how it was to be included into the linear model equation. Once we neglect some variables, the system becomes non-deterministic - we can't predict the fare exactly, since we don't use the information about bridges.  
 
 
 ```{r}
@@ -540,13 +549,12 @@ renderPlot({
 ```
 
 
+In section 2, our system was deterministic since we knew every every variable that mattered and how it was to be included into the linear model equation. Once fail to account for some predictors that matter, the system becomes non-deterministic - we can't predict the fare exactly. In this case, this means that we can't predict the exact fare, if we don't know how many bridges were crossed on that taxi ride.  
+
+Unlike previously, we can't solve a set of equations to arrive at coefficients that describe the data perfectly. But what we can do, is choose the coefficients such that the fare is predicted as well as possible. While we can't account for all variation in the fare, we can at least account for some of the structure in it - and the above plot shows that is *some* structure.
+
 In order to account for omitted variables (or possibly true randomness in the data), we need to modify the linear model equation to the form below. 
 
-<!-- Improve the phrasing below. -->
-All *constant effects* of the omitted (or even unknown variables) are absorbed into the intercept. (Importantly, the same would happen if those variables were not omitted, but their predictors were centered.)
-<!-- There is a lot to expand upon in that above statment. -->
-
-Meanwhile all the *variable effects* are absorbed into the error term $\epsilon$, which is assumed ot be a **normally distributed** **random variable** with mean 0, and some unknown standard deviation $\sigma$; $\epsilon \sim  N(0,\sigma)$
 
 $$ \underbrace{y_i}_{\text{Observed value}} =
             \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
@@ -554,51 +562,209 @@ $$ \underbrace{y_i}_{\text{Observed value}} =
             \overbrace{\underbrace{\beta_2}_{\text{Slope}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
             \ldots +
             \underbrace{\epsilon_i}_{Error}$$
-            
-            
+
+The new element here is the *error term* $\epsilon$, while the rest of the equation is as previously. You can think of the equation as consisting of *three components*.
+
+1. The intercept accounts for all *constants*, as well as the *average effect* of the omitted (and possibly even unknown predictors). 
+<!-- (Importantly, the same would happen if those variables were not omitted, but their predictors were centered.) -->
+<!-- Improve the phrasing above. -->
+<!-- There is a lot to expand upon in that above statment. -->
+
+2. The slopes account for all *variable effects* due to known predictors.
+
+3. Meanwhile, the error $\epsilon$ term accounts for all *variable effects* due to omitted predictors. In regular linear models, we assume that $\epsilon$ follows a **normal distribution** with mean 0, and some unknown standard deviation $\sigma$. Assuming that it has a mean of 0 simply means that all deviations from the value predicted by the linear model sum to zero, which usually has the implication that *the line that the linear model describes is supposed to go through the point cloud*.
+
+<!-- This is where the motivation for using the normal distribution goes. -->
+
+## Finding the right coefficients
+
+As mentioned previously, we want to find coefficient estimates which have the property that they minimize total prediction error. When we are estimating only one slope and one intercept, one way to think about this problem is that we are trying to find the highest point in the plot below. The plot shows the *negative* average absolute error (i.e., $-1 * \text{average absolute error}$) as a function of the values of intercept and slope. (I am using the *negative* absolute error because the error is easier to see in this case, as it forms a *'hill'* rather than a *'valley'*.)
+
+The first plot shows the error surface for a wide range of values for intercept and slope, while the second plot shows the same for a more narrow range of values.
+
+```{r}
+
+fname_LMerrors <- "lm_errors.rda"
+
+if (file.exists(fname_LMerrors)) {
+      load(file = fname_LMerrors)
+
+} else {
+      errors <- expand.grid(intercept = seq(-100, 200, .5), # seq(15, 40, .25)
+                            slope = seq(-10, 20, .5) %>% c(seq(0, 5, .25)) %>% c(seq(1.5, 3.5, .1)) %>% unique %>% sort)
+      errors$avg_err <- NA
+
+       
+}
+
+error_range <- range(errors$avg_err)
+
+#inputPanel(
+#  sliderInput("errorSurfaceMaxErr", "Maximum Error", min = error_range[1], max = error_range[2], value = error_range[2], round = FALSE, step = .25)
+#)
+
+library(plotly)
+library(akima) 
+
+plot_error_surface <- function(max_error) {
+  cur_errors <- filter(errors, avg_err < max_error )
+  s <- interp(cur_errors$intercept, 
+              cur_errors$slope, 
+              cur_errors$avg_err)
+  
+  intercept <- s$x
+  slope <- s$y
+  avg_error <- s$z
+  p <- plot_ly(x=~slope, y = ~intercept, z = ~-avg_error) %>% add_surface()
+  p
+}
+
+#renderPlot({
+#  plot_error_surface() #input$errorSurfaceMaxErr
+#})
+  
+plot_error_surface(100)
+
+plot_error_surface(15)
+```
+
 ```{r, fig.height=2, fig.width=2, fig.align='right'}
 inputPanel(
-  sliderInput("intercept3", "Intercept", min = -25, max = -15, value = -18, round = FALSE),
-  sliderInput("slope3", "Slope", min = 2, max = 6, value = 4, round = FALSE),
+  sliderInput("intercept3", "Intercept", min = -10, max = 50, value = 10, round = FALSE, step = .25),
+  sliderInput("slope3", "Slope", min = -5, max = 10, value = 4, round = FALSE, step = .25 ),
   checkboxInput("reset3", "Reset", value = FALSE)
 )
 ```
 
+
+Using the sliders below, we can verify that the is error is indeed what the above plots say it is.
+
 ```{r, fig.height=1.5, fig.width=2, fig.align='right'}
+
 errors <- data.frame()
-
-for (intercept in seq(20, 30, .5)) {
-  for(slope in seq(0, 5, .1)) {
-    cab_fares2$predicted <- with(cab_fares2, {intercept + slope * distance_km}) 
-    cab_fares2$residuals <- with(cab_fares2, {fare_mnt - predicted}) 
-
-    errors <- rbind(errors, data.frame(intercept = intercept, slope = slope, avg_err = mean(abs(cab_fares2$residuals)) )) %>% unique()
-
-  }
-}
-
-
-
 library(gridExtra)
+
 renderPlot({
   
   if (input$reset3) {
       errors <<- data.frame()
   }
 
-  cab_fares2$predicted <- with(cab_fares2, {input$intercept3 + input$slope3 * distance_km}) 
-  cab_fares2$residuals <- with(cab_fares2, {fare_mnt - predicted}) 
+  cab_fares2 %<>% mutate(predicted = input$intercept3 + input$slope3 * distance_km,
+                         residuals = fare_mnt - predicted )
+  
   errors <<- rbind(errors, data.frame(intercept = input$intercept3, slope = input$slope3, avg_err = mean(abs(cab_fares2$residuals)) )) %>% unique()
   
   p <- cab_fares2 %>% ggplot(aes(distance_km, fare_mnt)) + geom_point()
   p <- p + geom_abline(intercept = input$intercept3, slope = input$slope3, color = "red")
-  p + geom_errorbar(aes(ymin = ifelse(residuals > 0, dist, predicted),
-                        ymax = ifelse(residuals > 0, predicted, dist) ), width = 0 )
+  p <- p + geom_errorbar(aes(ymin = ifelse(residuals > 0, predicted, fare_mnt),
+                             ymax = ifelse(residuals > 0, fare_mnt, predicted) ), width = 0 )
+
+  p2 <- errors %>% ggplot(aes(intercept, slope)) + geom_tile(aes(fill=(avg_err)))
+  p2 + scale_fill_gradient(name = "count", trans = "log10") # ,
+                        #breaks = my_breaks, labels = my_breaks
   
-  
-  p2 <- errors %>% ggplot(aes(intercept, slope, color = avg_err)) + geom_point(size=10, alpha = 0.5) + theme_bw()
+  #geom_point(size=10, alpha = 0.5) + theme_bw()
 
   gridExtra::grid.arrange(p, p2)
-  
 })
 ```
+
+## Effects of Omitted Variables
+
+Let's see how omitting variables affects our coefficient estimates. We know that in reality we pay $2.5~MNT$ for every kilometer travelled. And when we fit a linear model to a subset of the data, such that $N_{bridges}=0$, only day rides, only yellow cabs, and $N_{passenger}=1$, we get exactly those estimates.
+
+```{r, echo = TRUE}
+cab_fares2A <- cab_fares %>% subset(cab_color_red == 0 &
+                                   n_passengers == 1 & 
+                                   is_night == 0 &
+                                   n_bridges %in% 0:1)
+
+```
+
+```{r, echo = TRUE}
+coef(lm(fare_mnt ~ distance_km, data = cab_fares2A, subset = n_bridges == 0))
+
+```
+
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+
+renderPlot({
+  coefs <- coef(lm(fare_mnt ~ distance_km, cab_fares2A))
+  a = coefs[1]; b1 = coefs[2];
+
+  p <- cab_fares2A %>% ggplot(aes(distance_km, fare_mnt)) + geom_point() + xlab("distance") + ylab("fare (MNT)")
+  p <- p + geom_abline(intercept = a, slope = b1, color = "red")
+  p + ggtitle(sprintf("%0.2f + %0.2f*x", a, b1))
+})
+```
+
+
+However, when we fit this model to the entire set of data, our estimates change somewhat. Why is that? And: what exactly determines how they change? 
+
+```{r, echo = TRUE}
+coef(lm(fare_mnt ~ distance_km, data = cab_fares2A))
+```
+
+In order to understand why the estimates change the way they do, let's zoom in on a tiny part of these data: Let's focus on measurements with the distances of $5~km$ 
+
+Let's look at what happens if we look at what happens in subsets with $N_{bridges}=0$, $N_{bridges}=1$.
+```{r, echo = TRUE}
+coef(lm(fare_mnt ~ distance_km, data = cab_fares2, subset = n_bridges == 0))
+```
+
+```{r, echo = TRUE}
+coef(lm(fare_mnt ~ distance_km, data = cab_fares2, subset = n_bridges == 1))
+```
+
+As you see, if we analyze subset with $N_{bridges}=0$ and $N_{bridges}=1$ separately, we get the correct slope for distance, but the intercepts differ. This is because the subsets include different fees for bridge crossings. 
+
+OK, so this explains why the intercept value is so odd when we pool the data. But what about the slope? Why don't we get the correct slope? We get an estimate that is, but not quite right. In oder to understand that let's zoom in on on a small subset of the data: Cab rides with distances of $5~km$ and $15~km$, respectively.  
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+
+cab_fares2B <- subset(cab_fares2A, distance_km %in% c(5,15))
+
+renderPlot({
+  coefs <- coef(lm(fare_mnt ~ distance_km, cab_fares2B))
+  a = coefs[1]; b1 = coefs[2];
+
+  p <- cab_fares2B %>% ggplot(aes(distance_km, fare_mnt)) + geom_point() + xlab("distance") + ylab("fare (MNT)")
+  p <- p + geom_abline(intercept = a, slope = b1, color = "red")
+  p + ggtitle(sprintf("%0.2f + %0.2f*x", a, b1))
+})
+```
+
+If you consider the plot above, along with the coefficient estimates below, you may start wondering what is going on. The slope estimate is even further away from the true value than before, and you can see in the plot that the regression line, does not pass in the middles between the two sets of data points.
+
+```{r, echo = TRUE}
+coef(lm(fare_mnt ~ distance_km, data = cab_fares2A, subset = distance_km %in% c(5,15) ))
+```
+
+The reason for the fact that the line seems to be too low is that there are actually different numbers of data points behind each point in the preceding graph. This is made clearer in the following plot, which uses jittering to illustrate the number of data points. The line gravitates towards the parts of the plot where there are more data points, because we are trying to minimize the average error. Thus being closer to many points, while being further away from a small number of points is better than being at equal distances to both, because the set of many datapoints influences the total average error more strongly than the set of few datapoints.  
+
+```{r, fig.height=2, fig.width=2, fig.align='right'}
+
+renderPlot({
+  coefs <- coef(lm(fare_mnt ~ distance_km, cab_fares2B))
+  a = coefs[1]; b1 = coefs[2];
+
+  p <- cab_fares2B %>% ggplot(aes(distance_km, fare_mnt)) + geom_jitter(height = .5, width = .5) + xlab("distance") + ylab("fare (MNT)")
+  p <- p + geom_abline(intercept = a, slope = b1, color = "red")
+  p + ggtitle(sprintf("%0.2f + %0.2f*x", a, b1))
+})
+```
+
+Because there are different numbers of observations for the different combinations of distance and $N_{bridges}$ (i.e., because the data is *unbalanced*), distance and $N_{bridges}$ appear to be correlated. The result is that at each value of distance, we have a different contribution of the effect of number of bridges. 
+```{r, echo = TRUE}
+cab_fares2B %>% group_by(distance_km) %>% dplyr::summarize(avg_n_bridges = mean(n_bridges))
+```
+<!-- Is this really the entire explanation? -->
+
+De-correlating them is easy in this example. All we need to do is to reduce the dataset to four unique points. Let's do that and take another look at the estimates.
+
+```{r, echo = TRUE}
+coef(lm(fare_mnt ~ distance_km, data = cab_fares2A %>% subset(distance_km %in% c(5,15)) %>% unique ))
+```
+
