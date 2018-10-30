@@ -768,3 +768,10 @@ De-correlating them is easy in this example. All we need to do is to reduce the 
 coef(lm(fare_mnt ~ distance_km, data = cab_fares2A %>% subset(distance_km %in% c(5,15)) %>% unique ))
 ```
 
+When the correlation between distance and bridges disappears, we get the estimates which we know to be correct.
+In sum, our previous estimates were slightly off because a spurious correlation between distance and bridges caused us to mis-estimate the slope - and since the best intercept estimate is dependent on the slope estimate (as illustrated in the 3D plots above), the intercept estimate ends up being different too.
+<!-- TODO: This is where i should say that centering will help, because at least the intercept that is 'off' will yield an interpretable number if predictors are centered. -->
+
+
+##
+
