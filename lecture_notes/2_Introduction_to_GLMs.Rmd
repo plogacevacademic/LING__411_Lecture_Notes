@@ -46,9 +46,9 @@ The basic form of a linear regression model, in a form that works for *idealized
 -->
 
 $$ \underbrace{y}_{\text{dependent variable}} =
-            \overbrace{\underbrace{\alpha}_{\text{intercept}}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_1}_{\text{slope}} * \underbrace{x_1}_{\text{predictor}}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_2}_{\text{slope}} * \underbrace{x_2}_{\text{predictor}}}^{\text{additive term}} +  
+            \overbrace{\underbrace{a}_{\text{intercept}}}^{\text{additive term}} + 
+            \overbrace{\underbrace{b_1}_{\text{slope}} * \underbrace{x_1}_{\text{predictor}}}^{\text{additive term}} + 
+            \overbrace{\underbrace{b_2}_{\text{slope}} * \underbrace{x_2}_{\text{predictor}}}^{\text{additive term}} +  
             \ldots$$
 <!--  \overbrace{\ldots}^{\text{more additive terms}} -->
             
@@ -92,66 +92,95 @@ labelled_slope_arrow <- function(p, x_start, y_start, x_end, y_end,
 cab_intercept <- 4.0
 cab_slope_distance <- 2.5
 cab_slope_nbridges <- 5
-cab_slope_color_red <- 30
+cab_slope_color_red <- 10
+cab_slope_size_9seater <- 15
+cab_slope_color_red_By_size_9seater <- 5
 cab_bridge <- 10
 cab_slope_npassengers <- 5
 
 cab_slope_night <- 10
 cab_slope_nightByDistance <- 1
 
-rint_unif <- function(n, min, max) { runif(n=n, min=min-0.499, max=max+0.499) %>% round() }
+rint_unif <- function(n, min, max) { 
+  runif(n=n, min=min-0.499, max=max+0.499) %>% round() 
+}
 
-n = 2000
+set.seed(1234)
+
+n = 50000
 cab_fares <- data.frame( distance_km = rint_unif(n, min=3, max=20),
-                         n_bridges = rint_unif(n, min=0, max=10),
-                         cab_color_red = runif(n=n, min=0, max=1) %>% round(),
-                         n_passengers = rint_unif(n, min = 1, max = 4),
-                         is_night =  runif(n=n, min=0, max=1) %>% round()
-                         )
+                    n_bridges = rint_unif(n, min=0, max=10),
+                    cab_color_red = runif(n=n, min=0, max=1) %>% round(),
+                    cab_size_9seater =  runif(n=n, min=0, max=1) %>% round(),
+                    n_passengers = rint_unif(n, min = 1, max = 4),
+                    is_night = runif(n=n, min=0, max=1) %>% round()
+                    )
 
 n = 10
-cab_fares %<>% rbind( data.frame( distance_km = rint_unif(n, min=3, max=20),
-                                  n_bridges = rep(0, n),
-                                  cab_color_red = 0,
-                                  n_passengers = 1,
-                                  is_night = 0
-                                )
+cab_fares %<>% rbind( 
+                  data.frame( distance_km = rint_unif(n, min=3, max=20),
+                              n_bridges = rep(0, n),
+                              cab_color_red = 0,
+                              cab_size_9seater = 0,
+                              n_passengers = 1,
+                              is_night = 0
+                            )
                     )
 
 n = 30
-cab_fares %<>% rbind( data.frame( distance_km = rint_unif(n, min=3, max=20),
-                                  n_bridges = rep(0, n),
-                                  cab_color_red = c(0, 1),
-                                  n_passengers = 1,
-                                  is_night = 0
-                                )
+cab_fares %<>% rbind( 
+                  data.frame( distance_km = rint_unif(n, min=3, max=20),
+                              n_bridges = rep(0, n),
+                              cab_color_red = c(0, 1),
+                              cab_size_9seater = 0,
+                              n_passengers = 1,
+                              is_night = 0
+                            )
                     )
 
 
 #cars_perfect <- data.frame(speed = 1, weight = 1, distx = 1, dist = 1)
 
-cab_fares <- within(cab_fares, 
-                  { fare_mnt <- cab_intercept + 
-                                cab_slope_distance*distance_km + 
-                                cab_slope_nbridges*n_bridges +
-                                cab_slope_color_red*cab_color_red +
-                                cab_slope_npassengers * (n_passengers-1) +
-                                cab_slope_night * is_night +
-                                cab_slope_nightByDistance * is_night * distance_km
-                                
-                  })
+cab_fares <- within(cab_fares,
+      { fare_mnt <- cab_intercept + 
+                    cab_slope_distance*distance_km + 
+                    cab_slope_nbridges*n_bridges +
+                    cab_slope_color_red*cab_color_red +
+                    cab_slope_size_9seater*cab_size_9seater +
+                    cab_slope_color_red_By_size_9seater*cab_color_red*cab_size_9seater +
+                    cab_slope_npassengers * (n_passengers-1) +
+                    cab_slope_night * is_night +
+                    cab_slope_nightByDistance * is_night * distance_km
+      })
 
-cab_fares1 <- cab_fares %>% subset(n_bridges == 0 & cab_color_red == 0 & n_passengers == 1 & is_night == 0)
-cab_fares2 <- cab_fares %>% subset(cab_color_red == 0 & n_passengers == 1 & is_night == 0)
-cab_fares3 <- cab_fares %>% subset(distance_km == 10 & n_bridges == 0 & n_passengers == 1 & is_night == 0)
-cab_fares4 <- cab_fares %>% subset(distance_km == 10 & n_bridges == 0 & 
-                                   cab_color_red == 0 & n_passengers == 1 & 
-                                   is_night == 0)
+cab_fares1 <- cab_fares %>% subset(n_bridges == 0 &
+                                     cab_color_red == 0 &
+                                     cab_size_9seater == 0 &
+                                     n_passengers == 1 &
+                                     is_night == 0)
+cab_fares2 <- cab_fares %>% subset(cab_color_red == 0 &
+                                     cab_size_9seater == 0 &
+                                     n_passengers == 1 & 
+                                     is_night == 0)
+cab_fares3 <- cab_fares %>% subset(distance_km == 10 &
+                                     cab_size_9seater == 0 &
+                                     n_bridges == 0 & 
+                                     n_passengers == 1 & 
+                                     is_night == 0)
+cab_fares3B <- cab_fares %>% subset(distance_km == 10 &
+                                     n_bridges == 0 & 
+                                     n_passengers == 1 & 
+                                     is_night == 0)
+cab_fares4 <- cab_fares %>% subset(distance_km == 10 & 
+                                     n_bridges == 0 &
+                                     cab_color_red == 0 & #n_passengers == 1 &
+                                     cab_size_9seater == 0 &
+                                     is_night == 0)
 
 ```
 
 
-## Single-variable Model
+## Single-variable models
 
 Let's take a look at a dataset of taxi rides in an unknown city. Imagine that I have taken `r nrow(cab_fares)` taxi rides, and recorded the travel distance, as well as the taxi fare for reach ride. 
 The following plot shows each of these measurements as a point with the distances (in km) on the x-axis, and the fare (in Mongolian tögrög; MNT) on the y-axis. This dataset is interesting, because you probably understand the typical relationships between ride distance and fare fairly well, so it is an ideal example for illustrating linear models.
@@ -205,14 +234,14 @@ The plot below illustrates these interpretations:
 <!-- TODO: Take-away message. -->
 
 
-## Multi-variable Model
+## Multi-variable models
 
 Let's imagine that this imaginary city has many bridges. Since I wasn't sure whether bridge tolls apply, I also recorded the number of bridges crossed on each trip. In the previous section, we've looked at the subset of data where no bridges were crossed. Let's see how the fare depends not only on distance travelled, but also on the number of bridges crossed.
 
 Now, we are looking at the relationship between three variables, and the data frame looks as follows:
 
 ```{r }
-DT::datatable(cab_fares2 %>% dplyr::select(fare_mnt, distance_km, n_bridges), options = list(searching = FALSE))
+DT::datatable(cab_fares2 %>% dplyr::select(fare_mnt, distance_km, n_bridges), options = list(searching = FALSE), rownames = FALSE)
 ```
 
 We will again assume that the relationship between fare, distance and number of bridges is linear, and that they contribute to the fare independently. We can now describe the relationship with the following equation:
@@ -239,6 +268,7 @@ If you enable the display of the single-variable model from the last section, yo
 You will also notice that the red plane and the black plane intersect in a line at $N_{bridges} = 0$. This is because the two model equations $a + b_1 * distance$ and  $a + b_1 * distance + b_2 * N_{bridges}$ are equivalent for $N_{bridges} = 0$. 
 
 ```{r, fig.height=2, fig.width=2, fig.align='right'}
+library(shiny)
 inputPanel(
   checkboxInput("modelOn", label = "Show multi-variable model:", value = TRUE),
   checkboxInput("originalModelOn", label = "Show old single-variable model:", value = FALSE),
@@ -252,11 +282,14 @@ renderPlot({
   a = cab_intercept; b1 = cab_slope_distance; b2 = cab_slope_nbridges;
   
   full_lm <- lm(fare_mnt ~ distance_km + n_bridges, cab_fares2)
-  summary(full_lm)
+  #summary(full_lm)
 
   angle <- 125
   if (!is.null(input)) angle <- input$angle
-  s3d <- scatterplot3d(cab_fares2, type = "h", color = "blue", angle=angle, pch = 16) # input$value
+  s3d <- scatterplot3d(cab_fares2 %>% 
+                         dplyr::select(distance_km, n_bridges, fare_mnt),
+                       type = "h", color = "blue", 
+                       angle=angle, pch = 16) # input$value
   #s3d$plane3d(Intercept = -48, x.coef = 0, y.coef = 5, col = "blue")
   
   if (as.logical(input$modelOn)) {
@@ -270,7 +303,7 @@ renderPlot({
 ```
 
 
-## Categorical Predictors
+## Models with categorical predictors
 
 Predictors on the **nominal** or **ordinal scale** (as opposed to **ratio**, or **interval scale**) are not naturally represented by numbers. 
 For example: Speaker gender, Presence or absence of wh-movement, word order (e.g., SOV, SVO, VSO), size (long, short).
@@ -285,8 +318,7 @@ While the choice of the coding scheme is somwewhat arbitraty, it will affect the
 In other words, **model parameterization** (or: **contrast specification**) affects the meaning of the coefficients. 
 We will use the following equation to describe the relationship:
 
-
-$$ \text{fare} = a + b * \text{cCabColor} $$, where $cCabColor$ is a numerical representation of the cab color. 
+$$ \text{fare} = a + b * \text{cCabColorRed} $$, where $cCabColorRed$ is a numerical representation of the cab color. 
 
 We can use **treatment contrasts** (yellow = 0, red = 1) or **sum contrasts** (yellow = -0.5, red = 0.5). 
 
@@ -328,39 +360,27 @@ renderPlot({
   coefs <- coef(lm(fare_mnt ~ cCab_color_red, cab_fares3))
   a = coefs[1]; b1 = coefs[2];
 
-
-  p <- cab_fares3 %>% ggplot(aes(cCab_color_red, fare_mnt)) + geom_point() + xlab("cab color contrast") + ylab("fare (MNT)")
+  p <- cab_fares3 %>% ggplot(aes(cCab_color_red, fare_mnt)) + geom_point() + xlab("cab color red") + ylab("fare (MNT)")
   
   if (as.logical(input$lineOnCat1)) {
     p <- p + geom_abline(intercept = a, slope = b1, color = "red")
   }
-  if (!as.logical(input$coefsOnCat1)) {
-    #p <- p  + scale_x_continuous(limits = c(15, 21)) +
-    #          scale_y_continuous(limits = c(30, 55))
-  } else {
-    #p <- p  + scale_x_continuous(limits = c(0, 1)) +
-    #          scale_y_continuous(limits = c(0, 1))
+  if (as.logical(input$coefsOnCat1)) {
     p <- p + geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    
-    p <- p %>% labelled_arrow(x_start = 0, y_start = 0,
-                              x_end = 0, y_end = a, 
-                              x_label = .1, y_label = 8, 
-                              label = "Intercept", color = "blue")
-    
-    p <- p %>% labelled_slope_arrow(x_start = 0, y_start = a,
-                                    x_end = 1, y_end = a + b1,
-                                    x_label = .9, y_label = 40,
-                                    label = "Slope", color = "green")
+    p <- p %>% labelled_arrow(x_start = 0, y_start = 0, x_end = 0, y_end = a, 
+                              x_label = .1, y_label = 8, label = "Intercept", color = "blue")
+    p <- p %>% labelled_slope_arrow(x_start = 0, y_start = a, x_end = 1, y_end = a + b1,
+                                    x_label = .9, y_label = 40, label = "Slope", color = "green")
       
   }
-  p + ggtitle(sprintf("%0.2f + %0.2f*x", a, b1))
+  p + ggtitle(sprintf("fare = %0.2f + %0.2f*x", a, b1))
 })
 ```
 
 
 
 
-## Centering predictors and its effect on intercepts
+## Centered predictors
 
 Now let's imagine that I don't know if the number of passengers affects the fare. So far I've been riding alone. Now let's look at a few rides with several other people ($distance = 10~km$, $N_{bridges} = 0$, yellow cabs only). 
 
@@ -372,10 +392,9 @@ However if we model it like this, our intercept is `r cab_intercept + 10*cab_slo
 
 The reason is that the intercept is the value of the fare when **all** predictors are 0 - yes, even the number of passengers. Barring any extremely unusual situations, this is not actually possible, and therefore an intercept of this kind is really just a number we need to plug into the equation. In other words, we don't learn anything from it.
 
-In order to remedy the situation and obtain a more useful intercept, we can **center** the predictor - that is, subtract the average of the vector from the vector itself. In this case, we will use
+In order to remedy the situation and obtain a more useful intercept, we can **center** the predictor - that is, subtract the average of the vector from the vector itself. In this case, since the average number of passengers is $2.5$, we will use
 
 $$\text{fare} = a + b * (\text{number of passengers}-2.5)$$
-
 
 This will leave us with the following interpretations of the coefficients:
 
@@ -411,12 +430,7 @@ renderPlot({
   if (as.logical(input$lineOnPassengers)) {
     p <- p + geom_abline(intercept = a, slope = b1, color = "red")
   }
-  if (!as.logical(input$coefsOnPassengers)) {
-    #p <- p  + scale_x_continuous(limits = c(15, 21)) +
-    #          scale_y_continuous(limits = c(30, 55))
-  } else {
-    #p <- p  + scale_x_continuous(limits = c(0, 1)) +
-    #          scale_y_continuous(limits = c(0, 1))
+  if (as.logical(input$coefsOnPassengers)) {
     p <- p + geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
     
     p <- p %>% labelled_arrow(x_start = 0, y_start = 0,
@@ -430,14 +444,18 @@ renderPlot({
                                     label = "Slope", color = "green")
       
   }
-  p + ggtitle(sprintf("%0.2f + %0.2f*x", a, b1))
+  p + ggtitle(sprintf("fare = %0.2f + %0.2f*x", a, b1))
 })
 ```
 
+As you see, centering the predictor in a single-variable model changes the meaning of the intercept. As you can verify in the above plot, centering makes the intercept correspond to the cab fare at the *average number of passengers* (instead of *at zero passengers*).
+This change in interpretation is because centering changes the interpretation of the zero point of the predictor. While zero corresponds to *no passengers* when the predictor for the number of passengers is uncentered, it corresponds to the average number of passengers when it is centerered. The data is "moved to the left", so to say. Because the intercept corresponds to the value of the fare at zero, the intercept changes as a result of centering.
+
+In sum, centering predictors in single-variable models can help obtain interpretable coefficients.
 
 
 
-## Main Effects and Interactions
+## Main effects and interactions
 
 So far, we've assumed that the effects of all variables are strictly additive. What if they are not?
 Previously, we've only looked at taxi rides during the day. What about night fares? 
@@ -479,9 +497,204 @@ cab_fares5$fare_mnt <- with(cab_fares5, cab_intercept +
 
 ```
 
-<!-- Go through a calculation in a little table, to see how the process works with non-centered and with centered predictors -->
+<!-- In all these sections, I never actually tell how I arrive at the model estimates. I should probably mention this in a few words somewhere at the beginning of section 2. -->
 
-<!-- In all these sections, I never actually tell how I arrive at the model estimates. I should probably mention this in a few words somewhere at the beginning of the section. -->
+
+
+## Centered predictors and their effect on main effect and interaction coefficients
+
+Let's take a look the effect of cab color and cab size. What I didn't mention before is that cabs come in two different sizes: 5-seaters, and 9-seaters. I want to find out whether larger cabs cost more. We'll be looking at a subset of data with $distance = 10~km$, and $N_{bridges}=0$, only day rides.
+
+We will set up numerical contrasts for the predictors for cab color (yellow and red), and cab size (5-seaters and 9-seaters), and model the relationship with the following linear equation. This means that we are trying to estimate the main effects of cab color and size, as well as their interaction.
+
+$$ \text{fare} = a + b_1 * \text{cCabColorRed} + b_2 * \text{cCabSize9Seater} + b_3 * \text{cCabColorRed} * \text{cCabSize9Seater}  $$
+
+The plots below illustrate the relationship between the numerical contrasts and cab fare. 
+
+```{r}
+inputPanel(
+  sliderInput("angleCPMVM", label = "Plot Angle", min = 0, max = 360, value = 125),
+  #checkboxInput("centerCabColorCPMVM", label = "Center cab color:", value = FALSE),
+  #checkboxInput("centerCabSizeCPMVM", label = "Center cab size:", value = FALSE),
+  checkboxInput("centerPredictorsCPMVM", label = "Center cab color and size:", value = FALSE),
+  checkboxInput("lineCPMVM", label = "Show Model:", value = FALSE),
+  checkboxInput("coefsCPMVM", label = "Show Coefficients:", value = FALSE)
+)  
+```
+
+```{r}
+
+cab_fares3B_res <- reactive({
+
+  if (exists("input") && input$centerPredictorsCPMVM) {
+    cab_fares3B$ccab_color_red <- cab_fares3B$cab_color_red - 0.5
+    cab_fares3B$ccab_size_9seater <- cab_fares3B$cab_size_9seater - 0.5
+  } else {
+    cab_fares3B$ccab_color_red <- cab_fares3B$cab_color_red
+    cab_fares3B$ccab_size_9seater <- cab_fares3B$cab_size_9seater
+  }
+
+  avg_data <- cab_fares3B %>% 
+              group_by(ccab_color_red, ccab_size_9seater) %>%
+              summarize(fare_mnt = mean(fare_mnt))
+  
+  coefs <- coef(lm(fare_mnt ~ ccab_color_red + ccab_size_9seater + ccab_color_red*ccab_size_9seater, 
+                    avg_data))
+  cab_fares3B_res <- list(data = avg_data, coefs = coefs)
+})
+
+```
+
+```{r, fig.show = 'hold', fig.height = 10}
+
+plot3d_cab_fares3B <- reactive({
+  cab_fares3B_res <- cab_fares3B_res()
+  a = cab_fares3B_res$coefs[1];
+  b1 = cab_fares3B_res$coefs[2];
+  b2 = cab_fares3B_res$coefs[3];
+
+  angle <- 125
+  if (!is.null(input)) angle <- input$angleCPMVM
+  s3d <- scatterplot3d(cab_fares3B_res$data, angle=angle, pch = 16)
+  #if (as.logical(input$modelOn)) {
+  #  s3d$plane3d(Intercept = a, x.coef = b1, y.coef = b2)
+  #}
+  s3d
+})
+
+plot2d_cab_fares3B <- reactive({
+    cab_fares3B_res <- cab_fares3B_res()
+    a = cab_fares3B_res$coefs[1]; 
+    b1 = cab_fares3B_res$coefs[2]; 
+    b2 = cab_fares3B_res$coefs[3];
+    b3 = cab_fares3B_res$coefs[4];
+
+    p <- cab_fares3B_res$data %>% ggplot(aes(ccab_color_red, fare_mnt, color = as.factor(ccab_size_9seater) )) +
+        geom_point()  + ylab("fare (MNT)") + xlab("cab color red")
+    p <- p + scale_color_discrete(name="ccab_size_9seater")
+    
+    if (as.logical(input$lineCPMVM)) {
+      p <- p + geom_line()
+      #p <- p + geom_abline(intercept = a, slope = b1, color = "red") # 
+      #p <- p + geom_abline(intercept = a + b2, slope = b1, color = "red")
+    }
+    if (as.logical(input$coefsCPMVM)) {
+      p <- p + geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
+      p <- p %>% labelled_arrow(x_start = 0, y_start = 0,
+                                x_end = 0, y_end = a, 
+                                x_label = .25, y_label = 15, 
+                                label = "Intercept", color = "blue")
+      
+      if (exists("input") && input$centerPredictorsCPMVM) {
+          p <- p %>% labelled_slope_arrow(x_start = -0.5, y_start = a - 0.5*b1, x_end = 0.5, y_end = a + 0.5*b1,
+                                          x_label = .35, y_label = a, label = "Slope b1", color = "green")
+          p <- p + geom_segment(data=NULL, aes(x=-0.5, y=a - 0.5*b1, xend=0.5, yend=a + 0.5*b1), 
+                                  color = "green", size = 1)
+          
+          p <- p %>% labelled_slope_arrow(x_start = 0, y_start = a - 0.5*b2, x_end = 0, y_end = a + 0.5*b2,
+                                          x_label = .2, y_label = a + b2/2, label = "Slope b2", color = "cyan")
+
+      } else {
+          p <- p %>% labelled_slope_arrow(x_start = 0, y_start = a, x_end = 1, y_end = a + b1,
+                                          x_label = .80, y_label = a + b1/2, label = "Slope b1", color = "green")
+          
+          p <- p %>% labelled_slope_arrow(x_start = 0, y_start = a - 0.5, x_end = 0, y_end = a + 0.5*b2,
+                                          x_label = .2, y_label = a + b2/2, label = "Slope b2", color = "cyan")
+
+      }
+    }
+    
+    p <- p + ggtitle(sprintf("fare = %0.2f + %0.2f*x + %0.2f*x + %0.2f*x", a, b1, b2, b3))
+    p
+})
+
+fluidRow(
+ column(6,
+   renderPlot({ plot3d_cab_fares3B() })
+     ),
+ column(6,
+    renderPlot({ plot2d_cab_fares3B() }) 
+     )
+)
+
+```
+
+
+We can treat the predictors in one of two ways[^4]: We can either encode them using *treatment contrasts*, or using *sum contrasts*. Let's review in turn what happens when we use each of those contrast coding schemes. 
+
+[^4]: There are more ways to encode the predictors, but these are the most common ones. 
+
+
+If we use treatment contrasts, the combinations of our predictors can be reduced to the four unique cases below. The first three columns indicate the encoding of the color contrast (yellow=0, red=1) and size contrast (5-seater=0, 9-seater=1), and the interaction predictor (the product of the previous two). The next column illustrates what happens when we plug these predictors into the equation above. In other words, it shows how we can construct the predicted fare from the coefficients of the linear model. Finally, the last column illustrates the simplified version of the predicted value of the fare, with all terms which equal zero removed.
+
+This table below illustrates that 
+
+- The intercept $a$ corresponds to the fare for yellow 5-seaters (it is the only non-zero term in row (1a)). 
+
+- The slope $b_1$ corresponds to the *effect of color for 5-seaters only* (it is the difference between rows (1c) and (1a)).
+
+- The slope $b_2$ corresponds to the *effect of size for yellow cabs only* (it is the difference between rows (1b) and (1a)).
+
+
+- The slope $b_3$ corresponds to the **additional** *effect of size for red cabs*. Alternatively, it can be understood as the  **additional** *effect of color for 9-seaters*.
+<!-- Isn't there a good way to illustrate it with a difference? -->
+
+(In understaning the above reasoning it may help not to focus on how $a,b_1,b_2$ and $b_3$ are obtained, but rather focus on how $a,b_1,b_2$ and $b_3$ would behave in the above equations if they corresponded to the meaning I assigned them.)
+
+|     | color | size | color $\cdot$ size
+|:----|:----|:-----|:-|:-|:-----|
+|*(1a)*|$0$  | $0$| $0$ |$fare = a + 0 \cdot b_1  + 0 \cdot b_2 + 0 \cdot b_3$ | $= a$
+|*(1b)*|$0$  | $1$| $0$ |$fare = a + 0 \cdot b_1  + 1 \cdot b_2 + 0 \cdot b_3$ | $= a + b_2$
+|*(1c)*|$1$  | $0$| $0$ |$fare = a + 1 \cdot b_1  + 0 \cdot b_2 + 0 \cdot b_3$ | $= a + b_1$
+|*(1d)*|$1$  | $1$| $1$ |$fare = a + 1 \cdot b_1  + 1 \cdot b_2 + 1 \cdot b_3$ | $= a + b_1 + b_2 + b_3$
+
+
+One of the problems with the above coefficient interpretations is that in most cases they are not quite what we are looking for. In most cases, we'll be interested in the average effect of cab color, the average effect of cab size, and the interaction between the two, and **not** in the effect of color for small cabs, the effect size for yellow cabs, and the interaction between the two. While we can compute one set of coefficients from the other, the former are far more informative.
+
+Using sum contrasts will give us more informative coefficients. The table below also illustrates that:
+
+- The intercept $a$ corresponds to the average fare in the data set (the average of the rows (2a-d) is $a$). 
+
+- The slope $b_1$ corresponds to the ** average** *effect of size* (the average of (2a,b) minus the average of (2c,d) is $b_1$).
+
+- The slope $b_2$ corresponds to the ** average** *effect of color* (the average of (2a,c) minus the average of (2b,d) is $b_2$).
+
+- The slope $b_3$ corresponds to the **additional** *effect of size for red cabs*. Alternatively, it can be understood as the  **additional** *effect of color for 9-seaters*.
+<!-- Isn't there a good way to illustrate it with a difference? -->
+
+
+|      | color | size | color $\cdot$ size |      |
+|:-----|:------|:-----|:-------|:-----|
+|*(2a)*|$-.5$  | $-.5$| $+.25$ | $fare = a - .5 \cdot b_1  - .5 \cdot b_2 + .25 \cdot b_3$ | 
+|*(2b)*|$-.5$  | $+.5$| $-.25$ | $fare = a - .5 \cdot b_1  + .5 \cdot b_2 - .25 \cdot b_3$ | 
+|*(2c)*|$+.5$  | $-.5$| $-.25$ | $fare = a + .5 \cdot b_1  - .5 \cdot b_2 - .25 \cdot b_3$ |
+|*(2d)*|$+.5$  | $+.5$| $+.25$ | $fare = a + .5 \cdot b_1  + .5 \cdot b_2 + .25 \cdot b_3$ |
+
+$fare = a - .5 \cdot b_1  - .5 \cdot b_2 + .25 \cdot b_3$
+$fare = a + .5 \cdot b_1  + .5 \cdot b_2 + .25 \cdot b_3$
+
+<!--
+TODO: Review these combinations in an optional subsection
+
+color centered
+
+|     | color | size | color $\cdot$ size |
+|:----|:------|:-----|:-|:-----|:--|
+|     |$-.5$  | $0$  | $0$   |$fare = a - .5 \cdot b_1 + 0 \cdot b_2 + 0 \cdot b_3$ | 
+|     |$-.5$  | $1$  | $-.5$ |$fare = a - .5 \cdot b_1 + 1 \cdot b_2 + 0 \cdot b_3$ | 
+|     |$+.5$  | $0$  | $0$   |$fare = a + .5 \cdot b_1 + 0 \cdot b_2 + 0 \cdot b_3$ | 
+|     |$+.5$  | $1$  | $+.5$ |$fare = a + .5 \cdot b_1 + 1 \cdot b_2 + .5 \cdot b_3$ |
+
+
+size centered
+
+|     | color | size | color $\cdot$ size |
+|:----|:----|:-----|:---|:-----|
+|     |$0$  | $-.5$| $0$ |$fare = a + 0 \cdot b_1  - .5 \cdot b_2$ |
+|     |$0$  | $+.5$| $0$ |$fare = a + 0 \cdot b_1  + .5 \cdot b_2$ |
+|     |$1$  | $-.5$| $-.5$ |$fare = a + 1 \cdot b_1  - .5 \cdot b_2$ |
+|     |$1$  | $+.5$| $+.5$ |$fare = a + 1 \cdot b_1  + .5 \cdot b_2$ | 
+-->
 
 # Stochastic Linear Models
 
@@ -525,12 +738,7 @@ renderPlot({
   if (as.logical(input$lineOnOmitted)) {
     p <- p + geom_abline(intercept = a, slope = b1, color = "red")
   }
-  if (!as.logical(input$coefsOnOmitted)) {
-    #p <- p  + scale_x_continuous(limits = c(15, 21)) +
-    #          scale_y_continuous(limits = c(30, 55))
-  } else {
-    #p <- p  + scale_x_continuous(limits = c(0, 1)) +
-    #          scale_y_continuous(limits = c(0, 1))
+  if (as.logical(input$coefsOnOmitted)) {
     p <- p + geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
     
     p <- p %>% labelled_arrow(x_start = 0, y_start = 0,
@@ -544,7 +752,7 @@ renderPlot({
                                     label = "Slope", color = "green")
       
   }
-  p + ggtitle(sprintf("%0.2f + %0.2f*x", a, b1))
+  p + ggtitle(sprintf("fare = %0.2f + %0.2f*x", a, b1))
 })
 ```
 
@@ -557,9 +765,9 @@ In order to account for omitted variables (or possibly true randomness in the da
 
 
 $$ \underbrace{y_i}_{\text{Observed value}} =
-            \overbrace{\underbrace{\alpha}_{\text{Intercept}}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_1}_{\text{Slope}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}} + 
-            \overbrace{\underbrace{\beta_2}_{\text{Slope}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
+            \overbrace{\underbrace{a}_{\text{Intercept}}}^{\text{additive term}} + 
+            \overbrace{\underbrace{b_1}_{\text{Slope}} * \underbrace{{x_1}_i}_{Predictor}}^{\text{additive term}} + 
+            \overbrace{\underbrace{b_2}_{\text{Slope}} * \underbrace{{x_2}_i}_{Predictor}}^{\text{additive term}} +  
             \ldots +
             \underbrace{\epsilon_i}_{Error}$$
 
@@ -622,11 +830,33 @@ plot_error_surface <- function(max_error) {
 #renderPlot({
 #  plot_error_surface() #input$errorSurfaceMaxErr
 #})
-  
-plot_error_surface(100)
 
+# fluidRow(
+#   column(6, 
+#     renderPlot({ plot_error_surface(100) })
+#       ),
+#   column(6, 
+#     renderPlot({ plot_error_surface(15) }) 
+#       )
+# )
+
+```
+
+<table>
+<tr><td>
+
+```{r}
+plot_error_surface(100)
+```
+</td><td>
+
+```{r}
 plot_error_surface(15)
 ```
+
+</td></tr>
+</table>
+
 
 ```{r, fig.height=2, fig.width=2, fig.align='right'}
 inputPanel(
@@ -696,7 +926,7 @@ renderPlot({
 
   p <- cab_fares2A %>% ggplot(aes(distance_km, fare_mnt)) + geom_point() + xlab("distance") + ylab("fare (MNT)")
   p <- p + geom_abline(intercept = a, slope = b1, color = "red")
-  p + ggtitle(sprintf("%0.2f + %0.2f*x", a, b1))
+  p + ggtitle(sprintf("fare = %0.2f + %0.2f*x", a, b1))
 })
 ```
 
@@ -732,7 +962,7 @@ renderPlot({
 
   p <- cab_fares2B %>% ggplot(aes(distance_km, fare_mnt)) + geom_point() + xlab("distance") + ylab("fare (MNT)")
   p <- p + geom_abline(intercept = a, slope = b1, color = "red")
-  p + ggtitle(sprintf("%0.2f + %0.2f*x", a, b1))
+  p + ggtitle(sprintf("fare = %0.2f + %0.2f*x", a, b1))
 })
 ```
 
@@ -752,7 +982,7 @@ renderPlot({
 
   p <- cab_fares2B %>% ggplot(aes(distance_km, fare_mnt)) + geom_jitter(height = .5, width = .5) + xlab("distance") + ylab("fare (MNT)")
   p <- p + geom_abline(intercept = a, slope = b1, color = "red")
-  p + ggtitle(sprintf("%0.2f + %0.2f*x", a, b1))
+  p + ggtitle(sprintf("fare = %0.2f + %0.2f*x", a, b1))
 })
 ```
 

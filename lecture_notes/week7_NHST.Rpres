@@ -1,0 +1,306 @@
+
+Why Statistics?
+========================================================
+author: 
+date: 
+autosize: true
+
+
+Why Statistics?
+========================================================
+- Typical research questions stated in broad terms:
+  1. Is the new pain medication we developed any good?
+  - Is the _buttered toast phenomenon_ really true?
+  - Does focus influence  word order in Turkish? 
+
+- What do we need to know to answer these questions?
+
+
+Why Statistics?
+========================================================
+
+Populations and Samples
+---
+- *Population*: The group to which we wish to generalize our findings.
+  - We will refer to chracterizations of the _population_ as _parameters_.
+  
+- *Sample*: A subset of the population.
+  - We will refer to chracterizations of a _sample_ as _statistics_.
+
+Inference
+---
+- Statistical inference is about making inferences about parameters, based on statistics.
+- Unfortunately, we aren't very good at that at making inferences from samples.
+
+
+
+Inference from small samples
+========================================================
+
+- Let's say we show two toys to five children. 
+- Four prefer toy A to toy B. 
+- Can we say there is a difference between the toys?
+
+
+Inference from small samples
+========================================================
+> Assume our scientist studies phenomena whose magnitude is small relative to uncontrolled variability, that is, the signal-to-noise ratio in the messages he receives from nature is low. Our scientist could be a meteorologist, a pharmacologist, or perhaps a psychologist. If he believes in the law of small numbers, the scientist will have exaggerated confidence in the validity of conclusions based on small samples. To illustrate, suppose he is engaged in studying which of two toys infants will prefer to play with. Of the first five infants studied, four have shown a preference for the same toy. ...
+>
+> Tversky & Kahnemann (1993). 'Belief in Small Numbers'.
+
+
+
+Inference from small samples
+========================================================
+> Many a psychologist will feel some confidence at this point, that the null hypothesis of no preference is false. Fortunately, such a conviction is not a sufficient condition for journal publication, although it may do for a book. By a quick computation, our psychologist will discover that the probability of a result as extreme as the one obtained is as high as [37.5%] under the null hypothesis.
+>
+> Tversky & Kahnemann (1993). 'Belief in Small Numbers'.
+
+
+Inference from small samples
+========================================================
+We are awful at grasping randomness:
+- Law of small numbers: People overestimate the representativeness of random samples. 
+- Gambler's fallacy
+  - People believe that short-term event frequencies will closely match long-term frequencies (i.e., probabilities).
+- Digit distributions in election fraud and tax fraud
+  - Benford's Law for leading digits
+  - uniform distribution of last digit (under certain conditions) 
+
+Null-Hypothesis Significance Testing (NHST)
+========================================================
+- Most frequently used statistical approach, at least in the Social Sciences. Often considered Popperian. 
+
+The Logic of NHST: Define two hypotheses
+---
+1. Null hypothesis $H_0$: typically, a straw man to be refuted
+- Alternative hypothesis $H_1$: typically, what we actually want to show
+- Compute the probability of data this extreme or even more so under $H_0$
+- If such data is sufficiently improbable (typically: $p < .05$), reject $H_0$. Therefore, accept $H_1$.
+- If such data is **not** sufficiently improbable, we are in statistical la-la-land.
+
+<!-- P($D^{+}$|$H_0$) -->
+
+
+NHST, Example 1: Is the coin fair?
+========================================================
+- Let's find out if a coin is fair or not.
+```{r, prompt=TRUE}
+coin_outcome_heads <- c(T,T,T,T,F,F,F,T,F,T,F,F,T,T,T,F,T,T,T,F,T)
+
+```
+- What do we need next?
+
+
+NHST, Example 1: Is the coin fair?
+========================================================
+- Let's find out if a coin is fair or not.
+```{r, prompt=TRUE}
+coin_outcome_heads <- c(T,T,T,T,F,F,F,T,F,T,F,F,T,T,T,F,T,T,T,F,T)
+```
+- We need:
+  1. a statistic that reflects the bias
+  2. a _sampling distribution_ of that statistic given the sample size
+
+
+NHST, Example 1: Is the coin fair?
+========================================================
+- Let's find out if a coin is fair or not.
+```{r, prompt=TRUE}
+coin_outcome_heads <- c(T,T,T,T,F,F,F,T,F,T,F,F,T,T,T,F,T,T,T,F,T)
+```
+- We need:
+  1. a statistic that reflects the bias: why not take the average?
+  2. a _sampling distribution_ of that statistic given the sample size
+```{r, prompt=TRUE}
+mean(coin_outcome_heads)
+```
+
+
+NHST, Example 1: Is the coin fair?
+========================================================
+- Let's find out if a coin is fair or not.
+```{r, prompt=TRUE}
+coin_outcome_heads <- c(T,T,T,T,F,F,F,T,F,T,F,F,T,T,T,F,T,T,T,F,T)
+```
+- We need:
+  1. a statistic that reflects the bias: why not take the average?
+  2. a _sampling distribution_ of that statistic given the sample size
+  
+
+NHST, Example 1: Is the coin fair?
+========================================================
+- A _sampling distribution_ of that statistic given the sample size:
+
+```{r, prompt=TRUE, size=10}
+n_tosses <- length(coin_outcome_heads) # number of tosses in sample
+
+# runs one replication of an experiment just like this, with a coin known to be fair,
+# and return the proportion of heads
+random_sample_H0 <- function() {
+  random_numbers_between_0_and_1 <- runif(n = n_tosses)
+  is_heads <- random_numbers_between_0_and_1 > 0.5
+  mean(is_heads)
+}
+```
+
+NHST, Example 1: Is the coin fair?
+========================================================
+Let's run the experiment with a fair coin 10^5 times and save the proportions of heads. In other words, we'll obtain an approximate sampling distribution under $H_0$ using Monte Carlo simulation.
+```{r, prompt=TRUE}
+sampling_dist_H0_approximation <- sapply(1:10^5, function(i) random_sample_H0() )
+```
+
+
+```{r, echo=FALSE}
+library(ggplot2)
+theme_set(theme_bw())
+```
+
+NHST, Example 1: Is the coin fair?
+========================================================
+Let's take a look at the resulting distribution
+```{r, prompt=TRUE, fig.height=5}
+ggplot(data= NULL, aes(sampling_dist_H0_approximation)) + geom_histogram(bins = 200, aes(y = (..count..)/sum(..count..)))
+```
+
+
+NHST, Example 1: Is the coin fair?
+========================================================
+- Let's find out if a coin is fair or not. We have 21 recorded tosses.
+```{r, prompt=TRUE}
+coin_outcome_heads <- c(T,T,T,T,F,F,F,T,F,T,F,F,T,T,T,F,T,T,T,F,T)
+```
+- We need:
+  1. a statistic that reflects the bias: why not take the average?
+  2. a _sampling distribution_ of that statistic given the sample size
+```{r, prompt=TRUE}
+mean(coin_outcome_heads) # statistic in sample
+```
+
+
+NHST, Example 1: Is the coin fair?
+========================================================
+- Let's find out if a coin is fair or not. We have 21 recorded tosses.
+```{r, prompt=TRUE}
+coin_outcome_heads <- c(T,T,T,T,F,F,F,T,F,T,F,F,T,T,T,F,T,T,T,F,T)
+```
+- We need:
+  1. a statistic that reflects the bias: why not take the average?
+  2. a _sampling distribution_ of that statistic given the sample size
+```{r, prompt=TRUE}
+mean(sampling_dist_H0_approximation >= mean(coin_outcome_heads)) # approximate probability of a statistic like this or more extreme
+```
+
+
+The Logic of Null-Hypothesis Significance Testing (NHST)
+========================================================
+1. Define null hypothesis $H_0$: typically, a straw man to be refuted (e.g., $p_H=0.5$)
+- Define alternative hypothesis $H_1$: typically, what we actually want to show (e.g., $p_H>0.5$ or $p_H>0.5$)
+- Compute the probability of data this extreme or even more so under $H_0$ (using the _sampling distribution_ of the statistic under $H_0$)
+- If such data is sufficiently improbable (typically: $p < .05$), reject $H_0$. Therefore, accept $H_1$.
+- If such data is _not_ sufficiently improbable, we are in statistical la-la-land.
+
+
+The Fair Coin Example Revisited
+========================================================
+- In the last lecture, we derived the sampling distribution of the proportion of a fair coin coming up heads using _Monte Carlo simulation_, given what we know about fair coins: $p_H = 0.5$
+- We then conducted a statistical test:
+  - $H_0$: coin is fair, i.e. $p_H = 0.5$
+  - $H_1$: coin is not fair, i.e. $H_1 \neq 0.5$
+  - We computed an approximation to $P(\hat{p_H} \geq 0.61)$, which suggested that such data are not all that unlikely under $H_0$. The probability was approximately $0.3$.
+  - Did we do it right? Remember, we wanted to know how unlikely **such or more extreme** data are.
+
+  
+The Fair Coin Example Revisited
+========================================================
+- In the last lecture, we derived the sampling distribution of the proportion of a fair coin coming up heads using _Monte Carlo simulation_, given what we know about fair coins: $p_H = 0.5$
+- We then conducted a statistical test:
+  - $H_0$: coin is fair, i.e. $p_H = 0.5$
+  - $H_1$: coin is not fair, i.e. $H_1 \neq 0.5$
+  - We computed an approximation to $P(\hat{p_H} \geq 0.61)$, which suggested that such data are not all that unlikely under $H_0$. The probability was approximately $0.3$.
+  - Did we do it right? Remember, we wanted to know how unlikely **such or more extreme** data are.
+  - **Wouldn't a coin with $p_H = 0.1$ also be unfair?**
+  
+The Fair Coin Example Revisited
+========================================================
+- In the last lecture, we derived the sampling distribution of the proportion of a fair coin coming up heads using _Monte Carlo simulation_, given what we know about fair coins: $p_H = 0.5$
+- We then conducted a statistical test:
+  - $H_0$: coin is fair, i.e. $p_H = 0.5$
+  - $H_1$: coin is not fair, i.e. $H_1 \neq 0.5$
+  - We computed an approximation to $P(\hat{p_H} \geq 0.61)$, which suggested that such data are not all that unlikely under $H_0$. The probability was approximately $0.2$.
+  - Did we do it right? Remember, we wanted to know how unlikely **such or more extreme** data are.
+  - Wouldn't a coin with $p_H = 0.1$ also be unfair?
+  - **We actually conducted a _one-sided test_. Was this justified? Does it correspond to the $H_0$ and $H_1$ stated above?**
+  
+
+The Fair Coin Example Revisited
+========================================================
+- Two-sided statistical test (e.g., fair coin):
+  - $H_0$: coin is fair, i.e. $p_H = 0.5$
+  - $H_1$: coin is not fair, i.e. $H_1 \neq 0.5$
+  - $P(D|H_0)$: $P(\hat{p_H} \geq 0.61 | \hat{p_H} \leq 0.39)$
+
+- One-sided statistical test (e.g., buttered toast phenomenon):
+  - $H_0$: coin is fair, i.e. $p_H \leq 0.5$
+  - $H_1$: coin is not fair, i.e. $H_1 > 0.5$
+  - $P(D|H_0)$: $P(\hat{p_H} \geq 0.61)$
+
+- We will do a few more of these today.
+
+
+Sampling Distributions
+========================================================
+- The _sampling distribution_ of a statistic is the probability distribution of the statistic.
+- Why do we need the sampling distribution?
+
+
+Sampling Distributions
+========================================================
+- The _sampling distribution_ of a statistic is the probability distribution of the statistic.
+- Why do we need the sampling distribution? - Because it tells us how (un)likely a particular test statistic is.
+- What does its shape depend on?
+
+Sampling Distributions
+========================================================
+- The _sampling distribution_ of a statistic is the probability distribution of the statistic.
+- Why do we need the sampling distribution? - Because it tells us how (un)likely a particular test statistic is.
+- What does its shape depend on?
+  1. the distribution of the data that the statistic is computed on
+  - the sample size
+
+Sampling Distributions: Let's take a look
+========================================================
+```{r, echo = T}
+simulate_coin_tosses <- function(n_replications, n_tosses, pH) { sapply(1:n_replications, function(i) mean(runif(n_tosses) < pH)) }
+
+n_replications <- 1000
+outcomes_fair_small <- simulate_coin_tosses(n_replications, n_tosses = 10, pH = .5)
+outcomes_unfair_small <- simulate_coin_tosses(n_replications, n_tosses = 10, pH = .8)
+outcomes_fair_large <- simulate_coin_tosses(n_replications, n_tosses = 100, pH = .5)
+outcomes_unfair_large <- simulate_coin_tosses(n_replications, n_tosses = 100, pH = .8)
+  
+```
+
+Sampling Distributions: Let's take a look
+========================================================
+
+```{r, echo = T}
+library(magrittr)
+df_outcomes_fair_small <- data.frame(fairness = "fair", size = "small", outcome = outcomes_fair_small)
+df_outcomes_unfair_small <- data.frame(fairness = "unfair", size = "small", outcome = outcomes_unfair_small)
+df_outcomes_fair_large <- data.frame(fairness = "fair", size = "large", outcome = outcomes_fair_large)
+df_outcomes_unfair_large <- data.frame(fairness = "unfair", size = "large", outcome = outcomes_unfair_large)
+df_all <- rbind(df_outcomes_fair_small, df_outcomes_unfair_small) %>% rbind(df_outcomes_fair_large) %>% rbind(df_outcomes_unfair_large)
+  
+```
+
+Sampling Distributions: Let's take a look
+========================================================
+- _Law of large numbers_: The larger the number of trials, the more likely is the average of the sample to be very close to the population mean.
+
+```{r, echo = T}
+library(ggplot2)
+ggplot(df_all, aes(outcome)) + geom_histogram(bins = 200, aes(y = (..count..)/sum(..count..))) + facet_grid(fairness ~ size)
+
+```
