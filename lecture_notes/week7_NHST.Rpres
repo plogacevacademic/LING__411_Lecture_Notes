@@ -82,7 +82,7 @@ The Logic of NHST: Define two hypotheses
 <!-- P($D^{+}$|$H_0$) -->
 
 
-NHST, Example 1: Is the coin fair?
+Example: The coin fairness test
 ========================================================
 - Let's find out if a coin is fair or not.
 ```{r, prompt=TRUE}
@@ -92,7 +92,7 @@ coin_outcome_heads <- c(T,T,T,T,F,F,F,T,F,T,F,F,T,T,T,F,T,T,T,F,T)
 - What do we need next?
 
 
-NHST, Example 1: Is the coin fair?
+Example: The coin fairness test
 ========================================================
 - Let's find out if a coin is fair or not.
 ```{r, prompt=TRUE}
@@ -100,37 +100,36 @@ coin_outcome_heads <- c(T,T,T,T,F,F,F,T,F,T,F,F,T,T,T,F,T,T,T,F,T)
 ```
 - We need:
   1. a statistic that reflects the bias
-  2. a _sampling distribution_ of that statistic given the sample size
+  2. a _sampling distribution_ of that statistic under $H_0$, given the sample size
 
 
-NHST, Example 1: Is the coin fair?
+Example: The coin fairness test
 ========================================================
 - Let's find out if a coin is fair or not.
 ```{r, prompt=TRUE}
 coin_outcome_heads <- c(T,T,T,T,F,F,F,T,F,T,F,F,T,T,T,F,T,T,T,F,T)
 ```
 - We need:
-  1. a statistic that reflects the bias: why not take the average?
-  2. a _sampling distribution_ of that statistic given the sample size
+  1. a statistic that reflects the bias: why not take the average number of heads?
 ```{r, prompt=TRUE}
 mean(coin_outcome_heads)
 ```
 
 
-NHST, Example 1: Is the coin fair?
+Example: The coin fairness test
 ========================================================
 - Let's find out if a coin is fair or not.
 ```{r, prompt=TRUE}
 coin_outcome_heads <- c(T,T,T,T,F,F,F,T,F,T,F,F,T,T,T,F,T,T,T,F,T)
 ```
 - We need:
-  1. a statistic that reflects the bias: why not take the average?
-  2. a _sampling distribution_ of that statistic given the sample size
-  
+  1. a statistic that reflects the bias: the average number of heads
+  2. a _sampling distribution_ of that statistic under $H_0$, given the sample size
 
-NHST, Example 1: Is the coin fair?
+
+Example: The coin fairness test
 ========================================================
-- A _sampling distribution_ of that statistic given the sample size:
+- A _sampling distribution_ of that statistic under $H_0$, given the sample size:
 
 ```{r, prompt=TRUE, size=10}
 n_tosses <- length(coin_outcome_heads) # number of tosses in sample
@@ -144,9 +143,9 @@ random_sample_H0 <- function() {
 }
 ```
 
-NHST, Example 1: Is the coin fair?
+Example: The coin fairness test
 ========================================================
-Let's run the experiment with a fair coin 10^5 times and save the proportions of heads. In other words, we'll obtain an approximate sampling distribution under $H_0$ using Monte Carlo simulation.
+Let's run the experiment with a fair coin $10^5$ times and save the proportions of heads. In other words, we'll obtain an *approximate* sampling distribution under $H_0$ using Monte Carlo simulation.
 ```{r, prompt=TRUE}
 sampling_dist_H0_approximation <- sapply(1:10^5, function(i) random_sample_H0() )
 ```
@@ -157,7 +156,7 @@ library(ggplot2)
 theme_set(theme_bw())
 ```
 
-NHST, Example 1: Is the coin fair?
+Example: The coin fairness test
 ========================================================
 Let's take a look at the resulting distribution
 ```{r, prompt=TRUE, fig.height=5}
@@ -165,7 +164,7 @@ ggplot(data= NULL, aes(sampling_dist_H0_approximation)) + geom_histogram(bins = 
 ```
 
 
-NHST, Example 1: Is the coin fair?
+Example: The coin fairness test
 ========================================================
 - Let's find out if a coin is fair or not. We have 21 recorded tosses.
 ```{r, prompt=TRUE}
@@ -173,21 +172,17 @@ coin_outcome_heads <- c(T,T,T,T,F,F,F,T,F,T,F,F,T,T,T,F,T,T,T,F,T)
 ```
 - We need:
   1. a statistic that reflects the bias: why not take the average?
-  2. a _sampling distribution_ of that statistic given the sample size
+  2. a _sampling distribution_ of that statistic under $H_0$, given the sample size
 ```{r, prompt=TRUE}
 mean(coin_outcome_heads) # statistic in sample
 ```
 
 
-NHST, Example 1: Is the coin fair?
+Example: The coin fairness test
 ========================================================
-- Let's find out if a coin is fair or not. We have 21 recorded tosses.
-```{r, prompt=TRUE}
-coin_outcome_heads <- c(T,T,T,T,F,F,F,T,F,T,F,F,T,T,T,F,T,T,T,F,T)
-```
 - We need:
-  1. a statistic that reflects the bias: why not take the average?
-  2. a _sampling distribution_ of that statistic given the sample size
+  1. a statistic that reflects the bias: the average number of heads
+  2. a _sampling distribution_ of that statistic under $H_0$, given the sample size
 ```{r, prompt=TRUE}
 mean(sampling_dist_H0_approximation >= mean(coin_outcome_heads)) # approximate probability of a statistic like this or more extreme
 ```
@@ -246,7 +241,88 @@ The Fair Coin Example Revisited
   - $H_1$: coin is not fair, i.e. $H_1 > 0.5$
   - $P(D|H_0)$: $P(\hat{p_H} \geq 0.61)$
 
-- We will do a few more of these today.
+
+Example 2: The coin fairness test (two-sided test)
+========================================================
+- Let's find out if a coin is fair or not.
+```{r, prompt=TRUE}
+coin_outcome_heads <- c(T,T,T,T,F,F,F,T,F,T,F,F,T,T,T,F,T,T,T,F,T)
+```
+- We need:
+  1. a statistic that reflects the bias: why not take the **absolute difference** between the average number of heads **and $0.5$**?
+```{r, prompt=TRUE}
+abs(mean(coin_outcome_heads) - 0.5)
+```
+
+
+Example 2: The coin fairness test (two-sided test)
+========================================================
+- Let's find out if a coin is fair or not.
+```{r, prompt=TRUE}
+coin_outcome_heads <- c(T,T,T,T,F,F,F,T,F,T,F,F,T,T,T,F,T,T,T,F,T)
+```
+- We need:
+  1. a statistic that reflects the bias: the **absolute difference** between the average number of heads **and $0.5$**
+  2. a _sampling distribution_ of that statistic under $H_0$, given the sample size
+
+
+Example 2: The coin fairness test (two-sided test)
+========================================================
+Let's run the experiment with a fair coin $10^5$ times and save the proportions of heads. In other words, we'll obtain an *approximate* sampling distribution under $H_0$ using Monte Carlo simulation.
+```{r, prompt=TRUE}
+sampling_dist_H0_absdiff_approximation <- sapply(1:10^5, function(i) abs(random_sample_H0()-0.5) )
+```
+
+This is what we used before:
+```{r, prompt=TRUE}
+sampling_dist_H0_avgheads_approximation <- sapply(1:10^5, function(i) random_sample_H0() )
+```
+
+
+```{r, echo=FALSE}
+library(ggplot2)
+theme_set(theme_bw())
+```
+
+Example 2: The coin fairness test (two-sided test)
+========================================================
+Let's take a look at the distribution of the absolute difference to $0.5$.
+```{r, prompt=TRUE, fig.height=5}
+ggplot(data= NULL, aes(sampling_dist_H0_absdiff_approximation)) + geom_histogram(bins = 200, aes(y = (..count..)/sum(..count..)))
+```
+
+
+Example 2: The coin fairness test (two-sided test)
+========================================================
+How is our new sampling distribution different from the old one? Here is the old one:
+```{r, prompt=TRUE, fig.height=5}
+ggplot(data= NULL, aes(sampling_dist_H0_avgheads_approximation)) + geom_histogram(bins = 200, aes(y = (..count..)/sum(..count..)))
+```
+
+
+
+Example 2: The coin fairness test (two-sided test)
+========================================================
+- Let's find out if a coin is fair or not. We have 21 recorded tosses.
+```{r, prompt=TRUE}
+coin_outcome_heads <- c(T,T,T,T,F,F,F,T,F,T,F,F,T,T,T,F,T,T,T,F,T)
+```
+- We need:
+  1. a statistic that reflects the bias: absolute difference between the average number of heads and $0.5$
+  2. a _sampling distribution_ of that statistic under $H_0$, given the sample size
+```{r, prompt=TRUE}
+abs(mean(coin_outcome_heads) - 0.5) # statistic in sample
+```
+
+
+Example 2: The coin fairness test (two-sided test)
+========================================================
+- We need:
+  1. a statistic that reflects the bias: the average number of heads
+  2. a _sampling distribution_ of that statistic under $H_0$, given the sample size
+```{r, prompt=TRUE}
+mean(sampling_dist_H0_approximation >= mean(coin_outcome_heads)) # approximate probability of a statistic like this or more extreme
+```
 
 
 Sampling Distributions
@@ -297,7 +373,8 @@ df_all <- rbind(df_outcomes_fair_small, df_outcomes_unfair_small) %>% rbind(df_o
 
 Sampling Distributions: Let's take a look
 ========================================================
-- _Law of large numbers_: The larger the number of trials, the more likely is the average of the sample to be very close to the population mean.
+- The closer the true parameter to 0 or 1, the more likely is the sample to be fairly close to the population mean.
+- The larger the number of trials, the more likely is the average of the sample to be fairly close to the population mean. (*Law of large numbers*)
 
 ```{r, echo = T}
 library(ggplot2)
