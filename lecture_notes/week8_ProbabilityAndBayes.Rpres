@@ -1,0 +1,31 @@
+
+- walk through the book example with the marbles
+
+- paths as placeholders of probabilites
+
+
+Conceptualizations of Probability
+  - Classical Probability
+    Equal probabilities assigned to *theoretically* equally likely events (e.g., blue marble or white marble). Probability of more complex events defined by 'the number of ways' that lead to their realization. 
+    Works well for toy examples, where the set of all possible events can be decoposed into equally likely events. 
+    Works well for simple examples (marbles, dice, cards, etc), but much more difficult to apply to more complex ones (e.g., 'probability of rain on two successive days' - what could the equally likely events, and how do they change from day to day?)
+    
+  - Frequentist Probability
+    Probabilies are (relative) frequencies of events in hypothetical, infinite sequences of *experiments* (situations in which events may or may not occur). P(A), the probability of an event A, is the proportion of times that A occurs in such a sequence. [Importantly, it's going to be the same proportion every time.]
+    How do we deal with 'the probability of rain tomorrow', or 'the probability that Donald Trump will be re-elected'? 
+    
+  - Bayesian Probability
+    Both of the above conceptualizations of probability are objective - they
+  
+
+- Probabilities
+- Joint probabilities, conditional probabilities
+- Probability distributions
+  - continuous vs. discrete
+  - examples, and what they were developed for
+--> Examples / Excercises
+
+  - probabilities as a way of encoding defree of belief
+  - Bayes rule
+  - Bayes rule for information accumulation
+  - 

@@ -321,7 +321,7 @@ Example 2: The coin fairness test (two-sided test)
   1. a statistic that reflects the bias: the average number of heads
   2. a _sampling distribution_ of that statistic under $H_0$, given the sample size
 ```{r, prompt=TRUE}
-mean(sampling_dist_H0_approximation >= mean(coin_outcome_heads)) # approximate probability of a statistic like this or more extreme
+mean(sampling_dist_H0_absdiff_approximation >= abs(mean(coin_outcome_heads)-0.5) ) # approximate probability of a statistic like this or more extreme
 ```
 
 
