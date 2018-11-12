@@ -1,0 +1,180 @@
+---
+title: "Probabilities and the Bayes Theorem"
+author: "Pavel Logacev"
+date: "November 12, 2018"
+output: 
+  ioslides_presentation:
+    widescreen: true
+    smaller: true
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Counting Marbles
+
+Let's review the marble example in McElreath, Chapter 2
+
+- We want to know the distribution of the colors of marbles in a bag with four marbles.
+
+- Logically, there are five possibilities.
+
+- We draw three marbles, **with replacement**. What do we know now?
+
+- We narrow down the options using logic. But we can narrow it down even further using under the assumption that some events are equally likely to occur.
+
+- The (relative) number of ways in which two complex events (*e.g. 'any blue marble'*) can occur, determines the relationship between their probabilities.
+
+- We may also have to consider prior information. For example, (i) another drawn marble, (ii) factory counts, (iii) knowledge about the manufacturing process. 
+
+
+## Conceptualizations of Probability
+
+- Difficult to say, although most of us have some sort of intuition of what it is.
+
+- It is a number that follows certain laws, which could be argued to encode common sense applied to numbers.
+
+
+## Conceptualizations of Probability | 1. Classical Probability
+
+- Equal probabilities assigned to *theoretically* equally likely events (e.g., blue marble or white marble). 
+
+- Probability of more complex events defined by 'the number of ways' that lead to their realization. 
+
+- Works well for simple examples (marbles, dice, cards, etc), where the set of all possible events can be decoposed into equally likely events. For example: *'probability of a coin coming up heads, then tails'*, *'probability of throwing a 1,2, and a 3 in succession with a six-sided die'*. 
+
+- Much more difficult to apply to more complex ones. For example: *'probability of rain on two successive days'* - what could the equally likely events be, and how do they change from day to day?
+
+
+## Conceptualizations of Probability | 2. Frequentist Probability
+    
+- Probabilies are (relative) frequencies of events in hypothetical, infinite sequences of *experiments* (situations in which events may or may not occur). 
+
+- P(A), the probability of an event A, is the proportion of times that A occurs in such a sequence. Importantly, it's going to be the same proportion every time.
+
+- In other words, every event *has* a probability of occuring which impacts its long-term frequency. Probabilities of events dependent on each other, are also dependent.
+
+- Example: *'probability of a biased coin coming up heads ($p_H=0.6$), then tails'*,  *'probability of rain on two successive days'*
+
+- How do we deal with *'the probability of rain tomorrow'*, or *'probability that Donald Trump will be re-elected'*, or *'the probability that this mushroom is poisonous'*? 
+
+
+
+## Conceptualizations of Probability | 3. Bayesian Probability
+
+- Both of the previous conceptualizations of probability are *objective*: they are about *'a true state of the world'*.
+
+- The last examples do not really have a probability under those interpretations. (Unless you subscribe to a multiverse-interpretation.) They are either true or false. And yet these expressions somehow make sense to us.
+
+- We can also conceptualize probability as a degree of belief. Sounds silly? - We use it in that way all the time.
+
+- For example, in 2004-2005, a group of experts estimated the probability of the deployment of a nuclear weapon in the next 10 years to be $50%$. What did they mean?  
+
+- We may differ in the probabilities that we assign to an event, based on our state of knowledge about the problem. 
+
+
+## The Laws of Probability
+
+- Whatever interpretation we assign probabilities, they must follow certain laws in order to be useful. It could be argued that the laws essentially to encode common sense applied to numbers.
+
+    - For any event A, the probability of A (P(A)) is a number between 0 and 1.
+    
+    - The probabilities of *all possible events* must sum to to 1. (**Law of total probability**)
+    
+    - For example, the probabilities of an event occuring and an event not occuring must be 1. (**Law of complements**)
+    
+    - **Mutually exclusive events**: Events that cannot happen at the same time. For example, a coin **coming up heads** and **coming up tails**.
+    
+    - For several events $A_1, ..., A_n$ which are mutually exclusive, the probability that one of the events occurs ($P(A_1~or~...~or~A_n)$) is the sum of their probabilites $P(A_1) + ... + P(A_n)$.
+    
+    - For two events $A_1, A_2$ which are *not* mutually exclusive, the probability that one of the events occurs ($P(A_1~or~A_n)$) is $P(A_1) + P(A_2) - P(A_1~and~A_2)$. (**Additive law of probability**)
+
+
+## The Laws of Probability
+
+- Whatever interpretation we assign probabilities, they must follow certain laws in order to be useful. It could be argued that the laws essentially to encode common sense applied to numbers.
+
+    - **Independent events**: Events for which the probability of the occurence of one does not depend on whether or not the other one has occured.
+    
+    - For two independent events $A_1, A_2$, the probability of both events occuring (**the joint probability of $A_1$ and $A_2$** $P(A_1~and~A_2)$ or $P(A_1, A_2)$) is the product of their probabilities: $P(A_1) \cdot P(A_2)$.
+
+    - **Conditional probability**: The conditional probability of event $A_1$ given event $A_2$ is the probability that event $A_1$ will occur (or has occured), given that $A_2$ has occured (or will occur).
+    
+    - For two events, the conditional probability $P(A_1|A_2)$ is $P(A_1,A_2) / P(A_2)$.
+
+    - For two independent events, the conditional probability $P(A_1|A_2)$ is just $P(A_1)$.
+    
+    - For mutually exclusive evenets, the conditional probability $P(A_1|A_2)$ is $0$.
+
+
+    - Examples of other non-independent events: *'the probability of getting an A in a class, given that the first assignment was an F'*, *'the probability that it will rain in X tomorrow, given that it has not rained there in 5 years'*. ($A_2$ doesn't actually need to be true, we're reasoning with counterfactuals.)
+    
+<!--
+- **Odds**: Probabilites can also be represented as the odds of something happening, where odds of of 4:3 mean that the event has a probability of $4/(4+3)$.
+-->
+
+## Probability Distributions
+
+- Any assignment of probabilites to events, such that it follow the above laws (especially the law of total probability) constitutes a **probability distribution**. 
+
+- A probability distribution with discrete outcomes can be characterized by its **probability mass function**.
+
+- For example, below is a **binomial distribution** with the parameters $n=10$ and $p=.6$.
+
+```{r, fig.height=3}
+library(ggplot2)
+df <- data.frame(successes = 0:10, prob = dbinom(0:10, size = 10, prob = .6) )
+ggplot(df, aes(successes, prob)) + geom_bar(stat = "identity", width = 0.1)+scale_x_continuous(breaks=0:10)
+```
+
+
+## Probability Distributions
+
+- Any assignment of probabilites to events, such that it follow the above laws (especially the law of total probability) constitutes a **probability distribution**. 
+
+- A probability distribution with discrete outcomes can be characterized by its **probability mass function**.
+
+- For example, below is a **binomial distribution** with the parameters $n=2$ and $p=.6$.
+
+```{r, fig.height=3}
+library(ggplot2)
+df <- data.frame(successes = 0:2, prob = dbinom(0:2, size = 2, prob = .6) )
+ggplot(df, aes(successes, prob)) + geom_bar(stat = "identity", width = 0.1)+scale_x_continuous(breaks=0:2)
+```
+
+
+## Probability Distributions
+
+- Any assignment of probabilites to events, such that it follow the above laws (especially the law of total probability) constitutes a **probability distribution**. 
+
+- A probability distribution with discrete outcomes can be characterized by its **probability mass function**.
+
+- For example, below is a **binomial distribution** with the parameters $n=1$ and $p=.6$. (Also called the *Bernoulli distribution*, because $n=1$.)
+
+```{r, fig.height=3}
+library(ggplot2)
+df <- data.frame(successes = 0:1, prob = dbinom(0:1, size = 1, prob = .6) )
+ggplot(df, aes(successes, prob)) + geom_bar(stat = "identity", width = 0.1)+scale_x_continuous(breaks=0:1)
+```
+
+## The Bayes Theorem
+
+- Whenever we try to infer anything from data, like in the marble example, we want to know $P(H|D)$. ...
+
+
+
+## Conditional Probability  
+
+- Probabilities
+- Joint probabilities, conditional probabilities
+- Probability distributions
+  - continuous vs. discrete
+  - examples, and what they were developed for
+--> Examples / Excercises
+
+  - probabilities as a way of encoding defree of belief
+  - Bayes rule
+  - Bayes rule for information accumulation
+  - 
