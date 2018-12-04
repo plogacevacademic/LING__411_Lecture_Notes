@@ -1007,5 +1007,7 @@ In sum, our previous estimates were slightly off because a spurious correlation 
 <!-- TODO: This is where i should say that centering will help, because at least the intercept that is 'off' will yield an interpretable number if predictors are centered. -->
 
 
-##
+# Generalized Linear Models
 
+Introduce generalized linear models with an example that where a predictor has a multiplicative effect on probabilities. Discuss that it's very implausible for anything to have an additive effect on probabilities.
+The ultimate model should still be deterministic.
