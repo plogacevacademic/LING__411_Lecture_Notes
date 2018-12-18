@@ -187,3 +187,43 @@ samples3C <- extract.samples(VOT_model3C)
 mean(samples3$c > 0) # prior for c standard deviation: 1
 mean(samples3B$c > 0) # prior for c standard deviation: 100
 mean(samples3C$c > 0) # prior for c standard deviation: 10
+
+samples <- samples3C %>% as.data.frame()
+samples_long <- samples %>% tidyr::gather(var, val)
+samples_long %>% ggplot(aes(val)) + 
+                  geom_histogram() + 
+                  facet_wrap(~var, scales = "free")
+
+
+# intercept, plus slope for voicing, and slope for gender model
+# less informative prior for gender
+VOT_model4 <- map2stan( alist(
+  msVOT ~ dnorm(mu, sigma),
+  mu <- a + b*cVoiced + c*cFemale + d*cVoiced*cFemale,
+  a ~ dnorm(0, 1000),
+  b ~ dnorm(0, 100),
+  c ~ dnorm(0, 100),
+  d ~ dnorm(0, 100),
+  sigma ~ dunif(0, 200)
+), data = as.data.frame(df) )
+precis(VOT_model4)
+
+samples4 <- extract.samples(VOT_model4)
+samples <- samples4 %>% as.data.frame()
+samples_long <- samples %>% tidyr::gather(var, val)
+samples_long %>% ggplot(aes(val)) + 
+  geom_histogram() + 
+  facet_wrap(~var, scales = "free")
+
+mean(samples4$d < 0)
+
+library(brms)
+
+m <- brm(msVOT ~ cVoiced + cFemale + cVoiced*cFemale,
+         as.data.frame(df))
+summary(m)
+
+
+m2 <- brm(msVOT ~ cVoiced + cFemale + cVoiced*cFemale + (cVoiced + 1|subject),
+         as.data.frame(df))
+summary(m2)
