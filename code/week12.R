@@ -94,12 +94,14 @@ head(df)
 unique(df$TargetConsonant)
 
 df$voiced <- ifelse(df$TargetConsonant %in% c("d", "g"), "voiced", "voiceless")
+df$cVoiced <- ifelse(df$voiced == "voiced", 1, -1) * 0.5
+
 
 df %>% group_by(gender, voiced) %>% summarize( mean_msVOT = mean(msVOT) ) %>% 
       ggplot(aes(gender, mean_msVOT, color = voiced, group = voiced)) + geom_point() + geom_line()
 
 
-
+# intercept-only model
 VOT_model1 <- map2stan( alist(
   msVOT ~ dnorm(mu, sigma),
   mu <- a,
@@ -109,3 +111,79 @@ VOT_model1 <- map2stan( alist(
 
 precis(VOT_model1)
 
+# Let's find out if Ugurcan is right.
+
+# Gaussian: density function
+plot(function(x) dnorm(x, 0, 50), xlim = c(-150,150))
+# Gaussian: cumulative distribution function
+plot(function(x) pnorm(x, 0, 50), xlim = c(-150,150))
+
+# probability mass to the left of -50 for
+# a Gaussian with mu=0, sigma=50
+pnorm(-50, 0, 50)
+1-pnorm(50, 0, 50)
+# conclusion: in a Gaussian, the probability mass
+# between [mean-sd; mean+sd] is 68%
+
+
+# intercept, plus slope for voicing model
+VOT_model2 <- map2stan( alist(
+  msVOT ~ dnorm(mu, sigma),
+  mu <- a + b*cVoiced,
+  a ~ dnorm(0, 1000),
+  b ~ dnorm(0, 100),
+  sigma ~ dunif(0, 200)
+), data = as.data.frame(df) )
+
+plot(VOT_model2)
+precis(VOT_model2)
+
+samples2 <- extract.samples(VOT_model2)
+ggplot(as.data.frame(samples2), aes(b)) + geom_histogram()
+
+mean(samples2$b >= 0)
+
+df$cFemale <- ifelse(df$gender == "m", -0.5, 0.5)
+
+# intercept, plus slope for voicing, and slope for gender model
+# strongly informative prior for gender
+VOT_model3 <- map2stan( alist(
+  msVOT ~ dnorm(mu, sigma),
+  mu <- a + b*cVoiced + c*cFemale,
+  a ~ dnorm(0, 1000),
+  b ~ dnorm(0, 100),
+  c ~ dnorm(0, 1),
+  sigma ~ dunif(0, 200)
+), data = as.data.frame(df) )
+
+# intercept, plus slope for voicing, and slope for gender model
+# less informative prior for gender
+VOT_model3B <- map2stan( alist(
+  msVOT ~ dnorm(mu, sigma),
+  mu <- a + b*cVoiced + c*cFemale,
+  a ~ dnorm(0, 1000),
+  b ~ dnorm(0, 100),
+  c ~ dnorm(0, 100),
+  sigma ~ dunif(0, 200)
+), data = as.data.frame(df) )
+
+# intercept, plus slope for voicing, and slope for gender model
+# less informative prior for gender
+VOT_model3C <- map2stan( alist(
+  msVOT ~ dnorm(mu, sigma),
+  mu <- a + b*cVoiced + c*cFemale,
+  a ~ dnorm(0, 1000),
+  b ~ dnorm(0, 100),
+  c ~ dnorm(0, 10),
+  sigma ~ dunif(0, 200)
+), data = as.data.frame(df) )
+precis(VOT_model3)
+precis(VOT_model3B)
+
+samples3 <- extract.samples(VOT_model3)
+samples3B <- extract.samples(VOT_model3B)
+samples3C <- extract.samples(VOT_model3C)
+
+mean(samples3$c > 0) # prior for c standard deviation: 1
+mean(samples3B$c > 0) # prior for c standard deviation: 100
+mean(samples3C$c > 0) # prior for c standard deviation: 10
